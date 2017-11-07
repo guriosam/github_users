@@ -1,0 +1,14 @@
+[1004/002600.619:ERROR:process_reader_win.cc(151)] SuspendThread: Acesso negado. (0x5)
+[1004/002600.622:ERROR:exception_snapshot_win.cc(87)] thread ID 41428 not found in process
+[1004/002600.622:WARNING:crash_report_exception_handler.cc(62)] ProcessSnapshotWin::Initialize failed
+[1004/204047.473:ERROR:process_info.cc(632)] range at 0x339f379600000000, size 0x273 fully unreadable
+[1004/204047.473:ERROR:process_info.cc(632)] range at 0x339f37fa00000000, size 0x273 fully unreadable
+[1004/204047.473:ERROR:process_info.cc(632)] range at 0x0, size 0x273 fully unreadable
+[1004/204056.008:ERROR:process_info.cc(632)] range at 0x3e10377000000000, size 0x1a8 fully unreadable
+[1004/204056.009:ERROR:process_info.cc(632)] range at 0x3e1037d200000000, size 0x1a8 fully unreadable
+[1004/204056.009:ERROR:process_info.cc(632)] range at 0x0, size 0x1a8 fully unreadable
+[1004/204056.614:ERROR:process_info.cc(380)] UncheckedAllocate
+[1004/204102.967:ERROR:process_info.cc(632)] range at 0x4ac0376e00000000, size 0x247 fully unreadable
+[1004/204102.967:ERROR:process_info.cc(632)] range at 0x4ac037d000000000, size 0x247 fully unreadable
+[1004/204102.967:ERROR:process_info.cc(632)] range at 0x0, size 0x247 fully unreadable
+[1004/204103.260:ERROR:process_info.cc(380)] UncheckedAllocate
