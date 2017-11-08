@@ -60,6 +60,7 @@ public class JSONManager {
 								if (a.contains("500")) {
 									return true;
 								}
+								
 								System.out.println(a);
 								wait = true;
 							}

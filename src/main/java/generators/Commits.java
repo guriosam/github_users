@@ -181,8 +181,9 @@ public class Commits {
 						if (!f.exists()) {
 							continue;
 						}
+						
 
-						String fileData = new String(Files.readAllBytes(Paths.get(LocalPaths.PATH + project + "/"
+						String fileData = new String(Files.readAllBytes(Paths.get(LocalPaths.PATH + project + "/users/"
 								+ uc.getAuthorLogin() + "/commits/" + uc.getSha() + ".json")));
 
 						LinkedTreeMap<String, ?> commit = gson.fromJson(fileData, LinkedTreeMap.class);

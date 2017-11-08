@@ -159,8 +159,6 @@ public class Issues {
 
 			for (String file : files) {
 				
-				System.out.println(file);
-
 				String fileData = new String(Files.readAllBytes(Paths.get(path + file)));
 				List<LinkedTreeMap> comments = gson.fromJson(fileData, List.class);
 
@@ -302,9 +300,6 @@ public class Issues {
 					for (LinkedTreeMap<?, ?> user : users) {
 						if (user != null && user.containsKey("login")) {
 							rev.add((String) user.get("login"));
-						}
-						if (rev.size() > 0) {
-							System.out.println(file);
 						}
 					}
 
