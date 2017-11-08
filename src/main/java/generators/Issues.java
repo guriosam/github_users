@@ -158,6 +158,8 @@ public class Issues {
 			HashMap<String, Integer> userCount = new HashMap<String, Integer>();
 
 			for (String file : files) {
+				
+				System.out.println(file);
 
 				String fileData = new String(Files.readAllBytes(Paths.get(path + file)));
 				List<LinkedTreeMap> comments = gson.fromJson(fileData, List.class);
@@ -421,7 +423,7 @@ public class Issues {
 			f.mkdirs();
 		}
 
-		for (int i = 0; i < 5000; i++) {
+		for (int i = 1; i < 5000; i++) {
 
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD + " \"https://api.github.com/repos/"
 					+ url + "/issues/comments?page=" + i + "\"";

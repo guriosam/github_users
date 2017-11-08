@@ -37,6 +37,10 @@ public class JSONManager {
 
 					if (read) {
 
+						if(a.equals("")){
+							continue;
+						}
+						
 						if (a.contains("https://developer.github.com/v3/#pagination")) {
 							return true;
 						}

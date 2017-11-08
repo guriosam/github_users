@@ -73,20 +73,20 @@ public class Main {
 
 			// Set buggy_users.csv path
 			System.out.println("Collect User Commit");
-			Users.collectUsersCommits(project, url);
+		//	Users.collectUsersCommits(project, url);
 
 			System.out.println("Create Commit Calls");
-			Commits.createGetCommitsCalls(project, url);
+		//	Commits.createGetCommitsCalls(project, url);
 			System.out.println("Generating Repository Issues Call");
-			Issues.generateRepositoryIssuesCall(project, url);
+		//	Issues.generateRepositoryIssuesCall(project, url);
 			System.out.println("Generating Issues ID");
-			Issues.generateIssuesIds(project);
+		//	Issues.generateIssuesIds(project);
 			System.out.println("Generating Individual Issues Call");
-			Issues.generateIndividualIssuesCall(project, url);
+		//	Issues.generateIndividualIssuesCall(project, url);
 			System.out.println("Reading Issues");
-			Issues.readIssues(project);
+		//	Issues.readIssues(project);
 			System.out.println("Filtering Issues by Users");
-			Issues.filterIssuesByUser(project);
+		//	Issues.filterIssuesByUser(project);
 			System.out.println("Generating Comments Calls");
 			Issues.generateCommentsCalls(project, url);
 			System.out.println("Generate Pulls Calls");
