@@ -22,6 +22,7 @@ public class JSONManager {
 
 			boolean wait = true;
 			long time = 0;
+			String t = "";
 
 			while (wait) {
 
@@ -79,7 +80,7 @@ public class JSONManager {
 						}
 
 						if (a.contains("X-RateLimit-Reset:")) {
-							String t = a.replace("X-RateLimit-Reset: ", "");
+							t = a.replace("X-RateLimit-Reset: ", "");
 							time = Long.valueOf(t + "000");
 
 							if (wait) {
@@ -93,7 +94,7 @@ public class JSONManager {
 				if (wait) {
 
 					Calendar calendar = Calendar.getInstance();
-					calendar.setTimeInMillis(time * 1000);
+					calendar.setTimeInMillis(Long.valueOf(t) * 1000);
 
 					SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss dd MM yyyy");
 					simpleDateFormat.setTimeZone(calendar.getTimeZone());
