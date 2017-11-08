@@ -89,7 +89,7 @@ public class Issues {
 
 			for (String id : ids) {
 
-				String fileData = new String(Files.readAllBytes(Paths.get(path + id + ".json")));
+				String fileData = new String(Files.readAllBytes(Paths.get(path + "individual/" + id + ".json")));
 				LinkedTreeMap issues = gson.fromJson(fileData, LinkedTreeMap.class);
 
 				UserIssue ui = new UserIssue();
@@ -158,7 +158,7 @@ public class Issues {
 			HashMap<String, Integer> userCount = new HashMap<String, Integer>();
 
 			for (String file : files) {
-				
+
 				String fileData = new String(Files.readAllBytes(Paths.get(path + file)));
 				List<LinkedTreeMap> comments = gson.fromJson(fileData, List.class);
 
@@ -341,9 +341,9 @@ public class Issues {
 
 		for (int i = 1; i < 2000; i++) {
 
-			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD + " \"https://api.github.com/repos/"
-					+ url + "/pulls" + "?state=all&page=" + i + "\"";
-			
+			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+					+ " \"https://api.github.com/repos/" + url + "/pulls" + "?state=all&page=" + i + "\"";
+
 			boolean empty = JSONManager.getJSON(path + i + ".json", command);
 
 			if (empty) {
@@ -395,8 +395,8 @@ public class Issues {
 
 			for (String id : ids) {
 
-				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD + " \"https://api.github.com/repos/"
-						+ url + "/pulls/" + id + "\"";
+				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "\"";
 
 				JSONManager.getJSON(pathIndividual + id + ".json", command);
 
@@ -420,8 +420,8 @@ public class Issues {
 
 		for (int i = 1; i < 5000; i++) {
 
-			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD + " \"https://api.github.com/repos/"
-					+ url + "/issues/comments?page=" + i + "\"";
+			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+					+ " \"https://api.github.com/repos/" + url + "/issues/comments?page=" + i + "\"";
 
 			boolean empty = JSONManager.getJSON(path + "comments_" + i + ".json", command);
 
@@ -445,16 +445,15 @@ public class Issues {
 
 		for (String id : ids) {
 
-			String idPath = path + id + "/";
-			File f = new File(path);
+			File f = new File(path + "/individual/");
 			if (!f.exists()) {
 				f.mkdirs();
 			}
 
-			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD + " \"https://api.github.com/repos/"
-					+ url + "/issues/" + id + "\"";
+			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+					+ " \"https://api.github.com/repos/" + url + "/issues/" + id + "\"";
 
-			JSONManager.getJSON(path + id + ".json", command);
+			JSONManager.getJSON(path + "individual/" + id + ".json", command);
 
 		}
 
@@ -472,8 +471,8 @@ public class Issues {
 		List<String> commands = new ArrayList<>();
 
 		for (int i = 1; i < 1000; i++) {
-			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD + " \"https://api.github.com/repos/"
-					+ url + "/issues?state=all&page=" + i + "\"";
+			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+					+ " \"https://api.github.com/repos/" + url + "/issues?state=all&page=" + i + "\"";
 
 			boolean empty = JSONManager.getJSON(path + i + ".json", command);
 
@@ -504,6 +503,10 @@ public class Issues {
 				List<LinkedTreeMap> issues = gson.fromJson(fileData, List.class);
 
 				for (LinkedTreeMap<?, ?> c : issues) {
+
+					if (c.containsKey("pull_request")) {
+						continue;
+					}
 
 					String id = c.get("number") + "";
 					id = id.replace(".", "");
