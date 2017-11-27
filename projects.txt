@@ -1,0 +1,47 @@
+		// projects.add("elasticsearch-hadoop");
+		// urls.add("elastic/elasticsearch-hadoop");
+		// projects.add("ExoPlayer");
+		// urls.add("google/ExoPlayer");
+
+		// projects.add("glide");
+		// urls.add("bumptech/glide");
+		// projects.add("fresco");
+		// urls.add("facebook/fresco");
+
+		// projects.add("MaterialDrawer");
+		// urls.add("mikepenz/MaterialDrawer");
+
+		// projects.add("HikariCP");
+		// urls.add("brettwooldridge/HikariCP");
+		// projects.add("Hystrix");
+		// urls.add("Netflix/Hystrix");
+		// projects.add("material-dialogs");
+		// urls.add("afollestad/material-dialogs");
+		// projects.add("guava");
+		// urls.add("google/guava");
+		// projects.add("RxJava");
+		// urls.add("ReactiveX/RxJava");
+		// projects.add("spring-security");
+		// urls.add("spring-projects/spring-security");
+
+		/*
+		 * projects.add("OpenRefine"); urls.add("OpenRefine/OpenRefine");
+		 * projects.add("guice"); urls.add("google/guice");
+		 */
+		 
+		 
+		projects.add("elasticsearch");
+		urls.add("elastic/elasticsearch");
+		projects.add("spring-boot");
+		urls.add("spring-projects/spring-boot");
+		projects.add("netty");
+		urls.add("netty/netty");
+		projects.add("bazel");
+		urls.add("bazelbuild/bazel");
+		projects.add("presto");
+		urls.add("prestodb/presto");
+		projects.add("Signal-Android");
+		urls.add("WhisperSystems/Signal-Android");
+		projects.add("okhttp");
+		urls.add("square/okhttp");
+		 

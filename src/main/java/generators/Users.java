@@ -24,6 +24,7 @@ import utils.Config;
 import utils.IO;
 import utils.JSONManager;
 import utils.LocalPaths;
+import utils.Util;
 
 public class Users {
 
@@ -129,8 +130,8 @@ public class Users {
 
 			String path = LocalPaths.PATH + project + "/" + user;
 
-			String call = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD + " https://api.github.com/users/" + user
-					+ "/repos > " + path + "/" + "repos.json";
+			String call = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+					+ " https://api.github.com/users/" + user + "/repos > " + path + "/" + "repos.json";
 
 			calls.add(call);
 
@@ -169,38 +170,19 @@ public class Users {
 
 	}
 
-	public static void collectUsersCommits(String project, String url) {
+	public static void downloadUsersCommitsBatches(String project, String url) {
+		System.out.println("Downloading Users Commits Batches");
 
-		List<String> names = IO.readAnyFile(LocalPaths.PATH + project + "/buggy_users.csv");
-		List<String> finalRun = new ArrayList<>();
+		List<String> names = Util.getBuggyUsers(project);
 
-		for (String line : names) {
-
-			if (line.contains("username")) {
-				continue;
-			}
-
-			String[] l = line.split(",");
-
-			String name = l[0];
-			name = name.replace("\"", "");
-			
+		for (String name : names) {
 			System.out.println(name);
-
-			String path = LocalPaths.PATH + project + "/users/" + name + "/";
-			File f = new File(path);
-			if (!f.exists()) {
-				f.mkdir();
-			}
-
-			for (int j = 1; j < 1000; j++) {
-
-				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD + " \"https://api.github.com/repos/"
-						+ url + "/commits?author=" + name + "&page=" + j + "\"";
-
+			String path = Util.getUserPath(project, name);
+			for (int j = 1; j < 10000; j++) {
+				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+						+ " \"https://api.github.com/repos/" + url + "/commits?author=" + name + "&page=" + j + "\"";
 				boolean empty = JSONManager.getJSON(path + j + ".json", command);
-				
-				if(empty){
+				if (empty) {
 					break;
 				}
 			}

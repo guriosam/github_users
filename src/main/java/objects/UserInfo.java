@@ -2,10 +2,18 @@ package objects;
 
 import java.util.List;
 
+import org.apache.commons.collections.ComparatorUtils;
+import org.joda.time.DateTime;
+import org.joda.time.Days;
+
+import utils.Util;
+
 public class UserInfo {
 
 	private String login;
 	private int commits;
+	private double meanCommits;
+	private double medianCommits;
 	private double additions;
 	private double meanAdditions;
 	private double medianAdditions;
@@ -15,9 +23,12 @@ public class UserInfo {
 	private double modifiedFiles;
 	private double meanModified;
 	private double medianModified;
+
+	private int commitsPulls;
+
 	private int activeDays;
 	private int timeOnProject;
-	private List<String> weeks;
+	//private List<String> weeks;
 
 	private int numberComments;
 	private int numberOpenIssues;
@@ -48,16 +59,34 @@ public class UserInfo {
 		return meanAdditions;
 	}
 
-	public void setMeanAdditions(double meanAdditions) {
-		this.meanAdditions = meanAdditions;
+	public void setMeanAdditions(List<Double> additions) {
+
+		Util.sortList(additions);
+
+		if (additions.size() > 0) {
+			meanAdditions = (double) this.additions / additions.size();
+		} else {
+			meanAdditions = 0.0;
+		}
+
 	}
 
 	public double getMedianAdditions() {
 		return medianAdditions;
 	}
 
-	public void setMedianAdditions(double medianAdditions) {
-		this.medianAdditions = medianAdditions;
+	public void setMedianAdditions(List<Double> additions) {
+
+		Util.sortList(additions);
+
+		if (additions.size() > 0) {
+			if (additions.size() % 2 == 0) {
+				this.medianAdditions = ((additions.get(additions.size() / 2) + additions.get(additions.size() / 2 - 1))
+						/ 2);
+			} else {
+				this.medianAdditions = (additions.get(additions.size() / 2));
+			}
+		}
 	}
 
 	public double getDeletions() {
@@ -72,16 +101,33 @@ public class UserInfo {
 		return meanDeletions;
 	}
 
-	public void setMeanDeletions(double meanDeletions) {
-		this.meanDeletions = meanDeletions;
+	public void setMeanDeletions(List<Double> deletions) {
+
+		Util.sortList(deletions);
+
+		if (deletions.size() > 0) {
+			meanDeletions = (double) this.deletions / deletions.size();
+		} else {
+			meanDeletions = 0.0;
+		}
 	}
 
 	public double getMedianDeletions() {
 		return medianDeletions;
 	}
 
-	public void setMedianDeletions(double medianDeletions) {
-		this.medianDeletions = medianDeletions;
+	public void setMedianDeletions(List<Double> deletions) {
+
+		Util.sortList(deletions);
+
+		if (deletions.size() > 0) {
+			if (deletions.size() % 2 == 0) {
+				this.medianDeletions = ((deletions.get(deletions.size() / 2) + deletions.get(deletions.size() / 2 - 1))
+						/ 2);
+			} else {
+				this.medianDeletions = (deletions.get(deletions.size() / 2));
+			}
+		}
 	}
 
 	public double getModifiedFiles() {
@@ -96,8 +142,16 @@ public class UserInfo {
 		return meanModified;
 	}
 
-	public void setMeanModified(double meanModified) {
-		this.meanModified = meanModified;
+	public void setMeanModified(List<Integer> files) {
+		
+		Util.sortList(files);
+
+		if (files.size() > 0) {
+			meanModified = (double) this.modifiedFiles / files.size();
+		} else {
+			meanModified = 0.0;
+		}
+		
 	}
 
 	public int getActiveDays() {
@@ -112,17 +166,26 @@ public class UserInfo {
 		return timeOnProject;
 	}
 
-	public void setTimeOnProject(int timeOnProject) {
-		this.timeOnProject = timeOnProject;
+	public void setTimeOnProject(List<String> datesToOrder, String maximumDate) {
+		
+		Util.sortList(datesToOrder);
+		
+		if (datesToOrder.size() > 0) {
+			timeOnProject = (Days.daysBetween(DateTime.parse(datesToOrder.get(0)), DateTime.parse(maximumDate)).getDays()
+							+ 1);
+		} else {
+			timeOnProject = 0;
+		}
+		
 	}
 
-	public List<String> getWeeks() {
-		return weeks;
-	}
+	//public List<String> getWeeks() {
+	//	return weeks;
+	//}
 
-	public void setWeeks(List<String> weeks) {
-		this.weeks = weeks;
-	}
+	//public void setWeeks(List<String> weeks) {
+	//	this.weeks = weeks;
+	//}
 
 	public int getNumberComments() {
 		return numberComments;
@@ -184,8 +247,17 @@ public class UserInfo {
 		return medianModified;
 	}
 
-	public void setMedianModified(double medianModified) {
-		this.medianModified = medianModified;
+	public void setMedianModified(List<Integer> files) {
+		Util.sortList(files);
+
+		if (files.size() > 0) {
+			if (files.size() % 2 == 0) {
+				this.medianModified = ((files.get(files.size() / 2) + files.get(files.size() / 2 - 1))
+						/ 2);
+			} else {
+				this.medianModified = (files.get(files.size() / 2));
+			}
+		}
 	}
 
 	public String getLogin() {
@@ -204,5 +276,40 @@ public class UserInfo {
 		this.insertionPoints = insertionPoints;
 	}
 
+	public double getMeanCommits() {
+		return meanCommits;
+	}
+
+	public void setMeanCommits(String minimumDate, String maximumDate) {
+
+		if (Days.daysBetween(DateTime.parse(minimumDate), DateTime.parse(maximumDate)).getDays() >= 0) {
+			meanCommits = (double) commits
+					/ (Days.daysBetween(DateTime.parse(minimumDate), DateTime.parse(maximumDate)).getDays() + 1);
+		} else {
+			meanCommits = (double) commits;
+		}
+
+	}
+
+	public double getMedianCommits() {
+		return medianCommits;
+	}
+
+	public void setMedianCommits(List<Integer> orderedDates) {
+		if (orderedDates.size() % 2 == 0) {
+			medianCommits = (double) (orderedDates.get(orderedDates.size() / 2)
+					+ orderedDates.get(orderedDates.size() / 2 - 1)) / 2;
+		} else {
+			medianCommits = (double) orderedDates.get(orderedDates.size() / 2);
+		}
+	}
+
+	public int getCommitsPulls() {
+		return commitsPulls;
+	}
+
+	public void setCommitsPulls(int commitsPulls) {
+		this.commitsPulls = commitsPulls;
+	}
 
 }

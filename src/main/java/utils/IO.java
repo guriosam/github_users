@@ -18,6 +18,10 @@ public class IO {
 		try {
 
 			File f = new File(filename);
+			
+			if(!f.exists()){
+				return new ArrayList<>();
+			}
 
 			reader = new BufferedReader(new FileReader(filename));
 

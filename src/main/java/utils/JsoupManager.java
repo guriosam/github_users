@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
@@ -15,9 +14,6 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonStreamParser;
 
 public class JsoupManager {
 

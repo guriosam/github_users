@@ -62,7 +62,13 @@ public class JSONManager {
 									return true;
 								}
 								
+								if(a.contains("404")){
+								//	System.out.println(command);
+									return true;
+								}
+
 								System.out.println(a);
+								
 								wait = true;
 							}
 						}
@@ -94,6 +100,11 @@ public class JSONManager {
 				if (wait) {
 
 					Calendar calendar = Calendar.getInstance();
+					
+					if(t.equals("")){
+						return false;
+					}
+					
 					calendar.setTimeInMillis(Long.valueOf(t) * 1000);
 
 					SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss dd MM yyyy");
@@ -112,6 +123,8 @@ public class JSONManager {
 					while (current <= time) {
 						current = System.currentTimeMillis();
 					}
+					
+					System.out.println("Restarting...");
 					wait = false;
 				} else {
 
