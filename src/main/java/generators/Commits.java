@@ -85,7 +85,7 @@ public class Commits {
 
 				userPullCommits = readAllCommitsOnFolder(LocalPaths.PATH + project + "/users/" + user + "/pulls/",
 						LocalPaths.PATH + project + "/users/" + user + "/pulls/commits/", user);
-				pull = true;
+				//pull = true;
 			}
 
 			if (userCommits.size() > 0) {
@@ -339,10 +339,10 @@ public class Commits {
 			} else {
 				files = IO.readAnyFile(pathInput + "commits_hashs.txt");
 
-				File f3 = new File(pathInput + "commits_hashs_missing.txt");
-				if (f3.exists()) {
-					files.addAll(IO.readAnyFile(pathInput + "commits_hashs_missing.txt"));
-				}
+				//File f3 = new File(pathInput + "commits_hashs_missing.txt");
+				//if (f3.exists()) {
+					//files.addAll(IO.readAnyFile(pathInput + "commits_hashs_missing.txt"));
+				//}
 			}
 
 			for (String file : files) {

@@ -16,20 +16,20 @@ public class Main {
 		List<String> projects = new ArrayList<>();
 		List<String> urls = new ArrayList<>();
 
-		projects.add("elasticsearch");
-		urls.add("elastic/elasticsearch");
-		projects.add("spring-boot");
-		urls.add("spring-projects/spring-boot");
-		projects.add("netty");
-		urls.add("netty/netty");
-		projects.add("bazel");
-		urls.add("bazelbuild/bazel");
-		projects.add("presto");
-		urls.add("prestodb/presto");
-		projects.add("Signal-Android");
-		urls.add("WhisperSystems/Signal-Android");
-		projects.add("okhttp");
-		urls.add("square/okhttp");
+		//projects.add("elasticsearch");
+		//urls.add("elastic/elasticsearch");
+		//projects.add("spring-boot");
+		//urls.add("spring-projects/spring-boot");
+		//projects.add("netty");
+		//urls.add("netty/netty");
+		//projects.add("bazel");
+		//urls.add("bazelbuild/bazel");
+		//projects.add("presto");
+		//urls.add("prestodb/presto");
+		//projects.add("Signal-Android");
+		//urls.add("WhisperSystems/Signal-Android");
+		//projects.add("okhttp");
+		//urls.add("square/okhttp");
 
 		for (int i = 0; i < projects.size(); i++) {
 
@@ -38,7 +38,7 @@ public class Main {
 
 			System.out.println("********** " + project.toUpperCase() + " *********");
 
-			// Download all user's commits of the project ( files with max 30
+			/*// Download all user's commits of the project ( files with max 30
 			// commits each)
 			Users.downloadUsersCommitsBatches(project, url);
 			// Reading file with 30 commits and downloading each commit
@@ -86,7 +86,7 @@ public class Main {
 			PullRequests.collectCommitsOnPullRequests(project, url, true);
 			PullRequests.collectPullCommitsByUser(project, url);
 
-
+*/
 			// FINAL DATA
 			// System.out.println("Analyzing all info");
 			Commits.analyzeCommits(project);

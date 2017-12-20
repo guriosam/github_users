@@ -181,8 +181,8 @@ public class Issues {
 		String path = LocalPaths.PATH + project + "/pull_requests.json";
 		List<UserPullRequest> userPull = new ArrayList<>();
 
-		List<String> pullMerged = IO.readAnyFile(Util.getPullsFolder(project) + "heuristic1.txt");
-		List<String> heuristc2 = IO.readAnyFile(Util.getPullsFolder(project) + "pull_requests_h2.txt");
+		//List<String> pullMerged = IO.readAnyFile(Util.getPullsFolder(project) + "heuristic1.txt");
+		//List<String> heuristc2 = IO.readAnyFile(Util.getPullsFolder(project) + "pull_requests_h2.txt");
 
 		int countH2 = 0;
 		int countH1 = 0;
@@ -199,7 +199,7 @@ public class Issues {
 				if (pull.containsKey("id")) {
 					String number = (String) pull.get("id");
 					upr.setId(number);
-
+/*
 					for (String pm : pullMerged) {
 						if (number.equals(pm)) {
 							m = true;
@@ -218,7 +218,7 @@ public class Issues {
 
 						}
 					}
-					
+	*/				
 					if(h && m){
 						countH1++;
 					}
