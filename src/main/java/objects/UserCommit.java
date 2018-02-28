@@ -1,6 +1,7 @@
 package objects;
 
 import java.util.Date;
+import java.util.List;
 
 public class UserCommit {
 	
@@ -9,6 +10,8 @@ public class UserCommit {
 	private String authorName;
 	private String authorEmail;
 	private String authorLogin;
+	private boolean testInclusion;
+	private String classification;
 	
 	
 	public String getSha() {
@@ -40,6 +43,18 @@ public class UserCommit {
 	}
 	public void setAuthorLogin(String authorLogin) {
 		this.authorLogin = authorLogin;
+	}
+	public boolean hasTestInclusion() {
+		return testInclusion;
+	}
+	public void setTestInclusion(boolean testInclusion) {
+		this.testInclusion = testInclusion;
+	}
+	public String getClassification() {
+		return classification;
+	}
+	public void setClassification(String classification) {
+		this.classification = classification;
 	}
 	
 	

@@ -9,6 +9,8 @@ public class UserPullRequest {
 	private String user;
 	private String merged_by;
 	private String state;
+	private String created_at;
+	private String closed_at;
 	private List<String> reviewers;
 	
 	public String getId() {
@@ -46,6 +48,18 @@ public class UserPullRequest {
 	}
 	public void setReviewers(List<String> reviewers) {
 		this.reviewers = reviewers;
+	}
+	public String getCreated_at() {
+		return created_at;
+	}
+	public void setCreated_at(String created_at) {
+		this.created_at = created_at;
+	}
+	public String getClosed_at() {
+		return closed_at;
+	}
+	public void setClosed_at(String closed_at) {
+		this.closed_at = closed_at;
 	}
 	
 	

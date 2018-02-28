@@ -10,6 +10,7 @@ import utils.Util;
 
 public class UserInfo {
 
+	private String hash;
 	private String login;
 	private int commits;
 	private double meanCommits;
@@ -23,20 +24,35 @@ public class UserInfo {
 	private double modifiedFiles;
 	private double meanModified;
 	private double medianModified;
+	private double buggyPercent;
+	private int emptyNatureCount;
+	private int managementCount;
+	private int reengineeringCount;
+	private int correctiveEngineeringCount;
+	private int forwardEngineeringCount;
+	private int uncategorizedCount;
+	private int emptySizeCount;
+	private int tinyCount;
+	private int smallCount;
+	private int mediumCount;
+	private int largeCount;
 
 	private int commitsPulls;
 
 	private int activeDays;
 	private int timeOnProject;
-	//private List<String> weeks;
+	// private List<String> weeks;
 
 	private int numberComments;
 	private int numberOpenIssues;
 	private int numberClosedIssues;
+	private double pullRequestsMerged;
 	private double percentPullRequestsMerged;
 	private int numberOpenPullRequests;
 	private int numberClosedPullRequests;
 	private int numberRequestedReviewer;
+	private boolean insertionTests;
+	private int insertionTestsCount;
 	private int insertionPoints;
 
 	public int getCommits() {
@@ -143,7 +159,7 @@ public class UserInfo {
 	}
 
 	public void setMeanModified(List<Integer> files) {
-		
+
 		Util.sortList(files);
 
 		if (files.size() > 0) {
@@ -151,7 +167,7 @@ public class UserInfo {
 		} else {
 			meanModified = 0.0;
 		}
-		
+
 	}
 
 	public int getActiveDays() {
@@ -167,25 +183,25 @@ public class UserInfo {
 	}
 
 	public void setTimeOnProject(List<String> datesToOrder, String maximumDate) {
-		
+
 		Util.sortList(datesToOrder);
-		
+
 		if (datesToOrder.size() > 0) {
-			timeOnProject = (Days.daysBetween(DateTime.parse(datesToOrder.get(0)), DateTime.parse(maximumDate)).getDays()
-							+ 1);
+			timeOnProject = (Days.daysBetween(DateTime.parse(datesToOrder.get(0)), DateTime.parse(maximumDate))
+					.getDays() + 1);
 		} else {
 			timeOnProject = 0;
 		}
-		
+
 	}
 
-	//public List<String> getWeeks() {
-	//	return weeks;
-	//}
+	// public List<String> getWeeks() {
+	// return weeks;
+	// }
 
-	//public void setWeeks(List<String> weeks) {
-	//	this.weeks = weeks;
-	//}
+	// public void setWeeks(List<String> weeks) {
+	// this.weeks = weeks;
+	// }
 
 	public int getNumberComments() {
 		return numberComments;
@@ -252,8 +268,7 @@ public class UserInfo {
 
 		if (files.size() > 0) {
 			if (files.size() % 2 == 0) {
-				this.medianModified = ((files.get(files.size() / 2) + files.get(files.size() / 2 - 1))
-						/ 2);
+				this.medianModified = ((files.get(files.size() / 2) + files.get(files.size() / 2 - 1)) / 2);
 			} else {
 				this.medianModified = (files.get(files.size() / 2));
 			}
@@ -296,11 +311,16 @@ public class UserInfo {
 	}
 
 	public void setMedianCommits(List<Integer> orderedDates) {
-		if (orderedDates.size() % 2 == 0) {
-			medianCommits = (double) (orderedDates.get(orderedDates.size() / 2)
-					+ orderedDates.get(orderedDates.size() / 2 - 1)) / 2;
-		} else {
-			medianCommits = (double) orderedDates.get(orderedDates.size() / 2);
+		if (orderedDates.size() == 0) {
+			medianCommits = 0;
+		} else if (orderedDates.size() > 0) {
+
+			if (orderedDates.size() % 2 == 0) {
+				medianCommits = (double) (orderedDates.get(orderedDates.size() / 2)
+						+ orderedDates.get(orderedDates.size() / 2 - 1)) / 2;
+			} else {
+				medianCommits = (double) orderedDates.get(orderedDates.size() / 2);
+			}
 		}
 	}
 
@@ -310,6 +330,172 @@ public class UserInfo {
 
 	public void setCommitsPulls(int commitsPulls) {
 		this.commitsPulls = commitsPulls;
+	}
+
+	public String getHash() {
+		return hash;
+	}
+
+	public void setHash(String hash) {
+		this.hash = hash;
+	}
+
+	public double getBuggyPercent() {
+		return buggyPercent;
+	}
+
+	public void setBuggyPercent(double buggyPercent) {
+		this.buggyPercent = buggyPercent;
+	}
+
+	public void setInsertionTests(boolean b) {
+		this.insertionTests = b;
+
+	}
+
+	public int getInsertionTestsCount() {
+		return insertionTestsCount;
+	}
+
+	public void setInsertionTestsCount(int insertionTestsCount) {
+		this.insertionTestsCount = insertionTestsCount;
+	}
+
+	public double getPullRequestsMerged() {
+		return pullRequestsMerged;
+	}
+
+	public void setPullRequestsMerged(double pullRequestsMerged) {
+		this.pullRequestsMerged = pullRequestsMerged;
+	}
+
+
+	public int getEmptyNatureCount() {
+		return emptyNatureCount;
+	}
+
+	public void setEmptyNatureCount(int emptyNatureCount) {
+		this.emptyNatureCount = emptyNatureCount;
+	}
+
+	public int getEmptySizeCount() {
+		return emptySizeCount;
+	}
+
+	public void setEmptySizeCount(int emptySizeCount) {
+		this.emptySizeCount = emptySizeCount;
+	}
+
+	public int getTinyCount() {
+		return tinyCount;
+	}
+
+	public void setTinyCount(int tinyCount) {
+		this.tinyCount = tinyCount;
+	}
+
+	public int getSmallCount() {
+		return smallCount;
+	}
+
+	public void setSmallCount(int smallCount) {
+		this.smallCount = smallCount;
+	}
+
+	public int getMediumCount() {
+		return mediumCount;
+	}
+
+	public void setMediumCount(int mediumCount) {
+		this.mediumCount = mediumCount;
+	}
+
+	public int getLargeCount() {
+		return largeCount;
+	}
+
+	public void setLargeCount(int largeCount) {
+		this.largeCount = largeCount;
+	}
+
+	public boolean isInsertionTests() {
+		return insertionTests;
+	}
+
+	public void setMeanCommits(double meanCommits) {
+		this.meanCommits = meanCommits;
+	}
+
+	public void setMedianCommits(double medianCommits) {
+		this.medianCommits = medianCommits;
+	}
+
+	public void setMeanAdditions(double meanAdditions) {
+		this.meanAdditions = meanAdditions;
+	}
+
+	public void setMedianAdditions(double medianAdditions) {
+		this.medianAdditions = medianAdditions;
+	}
+
+	public void setMeanDeletions(double meanDeletions) {
+		this.meanDeletions = meanDeletions;
+	}
+
+	public void setMedianDeletions(double medianDeletions) {
+		this.medianDeletions = medianDeletions;
+	}
+
+	public void setMeanModified(double meanModified) {
+		this.meanModified = meanModified;
+	}
+
+	public void setMedianModified(double medianModified) {
+		this.medianModified = medianModified;
+	}
+
+	public void setTimeOnProject(int timeOnProject) {
+		this.timeOnProject = timeOnProject;
+	}
+
+	public int getManagementCount() {
+		return managementCount;
+	}
+
+	public void setManagementCount(int managementCount) {
+		this.managementCount = managementCount;
+	}
+
+	public int getReengineeringCount() {
+		return reengineeringCount;
+	}
+
+	public void setReengineeringCount(int reengineeringCount) {
+		this.reengineeringCount = reengineeringCount;
+	}
+
+	public int getCorrectiveEngineeringCount() {
+		return correctiveEngineeringCount;
+	}
+
+	public void setCorrectiveEngineeringCount(int correctiveEngineeringCount) {
+		this.correctiveEngineeringCount = correctiveEngineeringCount;
+	}
+
+	public int getForwardEngineeringCount() {
+		return forwardEngineeringCount;
+	}
+
+	public void setForwardEngineeringCount(int forwardEngineeringCount) {
+		this.forwardEngineeringCount = forwardEngineeringCount;
+	}
+
+	public int getUncategorizedCount() {
+		return uncategorizedCount;
+	}
+
+	public void setUncategorizedCount(int uncategorizedCount) {
+		this.uncategorizedCount = uncategorizedCount;
 	}
 
 }

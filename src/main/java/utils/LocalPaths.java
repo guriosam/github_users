@@ -8,4 +8,6 @@ public class LocalPaths {
 	
 	public static final String CURL = "C:/Program Files/curl/src/curl.exe";
 	
+	public static final String PROJECT_PATH = "C:/Users/gurio/workspace/miner/";
+	
 }

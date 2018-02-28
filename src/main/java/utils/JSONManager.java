@@ -14,6 +14,7 @@ public class JSONManager {
 	public static boolean getJSON(String path, String command) {
 
 		File file = new File(path);
+		
 		if (file.exists()) {
 			return false;
 		}
@@ -27,7 +28,7 @@ public class JSONManager {
 			while (wait) {
 
 				Process p = Runtime.getRuntime().exec(command);
-
+				
 				BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
 				String a = null;
@@ -35,6 +36,7 @@ public class JSONManager {
 				boolean read = false;
 
 				while ((a = input.readLine()) != null) {
+					
 
 					if (read) {
 
@@ -139,6 +141,7 @@ public class JSONManager {
 					}
 
 					IO.writeAnyString(path, json);
+					System.out.println(path);
 				}
 
 			}

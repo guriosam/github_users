@@ -15,21 +15,46 @@ public class Util {
 
 	public static List<String> getBuggyUsers(String project) {
 
-		List<String> buggyUsers = IO.readAnyFile(LocalPaths.PATH + project + "/buggy_users.csv");
+		List<String> buggyUsers = IO.readAnyFile(
+				LocalPaths.PROJECT_PATH + "insertion_points" + "/insertion_points_data_" + project + ".csv");
 
 		List<String> users = new ArrayList<>();
 
 		for (String buggy : buggyUsers) {
-			if (buggy.contains("username")) {
+			if (buggy.contains("hash")) {
 				continue;
 			}
 
 			String[] l = buggy.split(",");
 
-			String name = l[0];
+			String name = l[1];
 			name = name.replace("\"", "");
 
-			users.add(name);
+			if (name.equals("NA")) {
+				continue;
+			}
+
+			if (!users.contains(name)) {
+				users.add(name);
+			}
+		}
+
+		return users;
+	}
+
+	public static List<String> getUserInfo(String project) {
+
+		List<String> buggyUsers = IO.readAnyFile(
+				LocalPaths.PROJECT_PATH + "insertion_points" + "/insertion_points_data_" + project + ".csv");
+
+		List<String> users = new ArrayList<>();
+
+		for (String buggy : buggyUsers) {
+			if (buggy.contains("hash")) {
+				continue;
+			}
+
+			users.add(buggy);
 		}
 
 		return users;
@@ -202,4 +227,101 @@ public class Util {
 		return path;
 	}
 
+	public static boolean checkPastDate(String date1, String date2, String splitter) {
+
+		if (date1 == null || date2 == null) {
+			return false;
+		}
+
+		if (date1.contains("T")) {
+			date1 = date1.replace("T", "-");
+			date1 = date1.replace("Z", "");
+			date1 = date1.replace(":", "-");
+		}
+
+		if (date2.contains("T")) {
+			date2 = date2.replace("T", "-");
+			date2 = date2.replace("Z", "");
+			date2 = date2.replace(":", "-");
+		}
+
+		String[] d1 = date1.split(splitter);
+
+		Integer year1 = Integer.parseInt(d1[0]);
+
+		Integer m1 = Integer.parseInt(d1[1]);
+
+		Integer day1 = Integer.parseInt(d1[2]);
+
+		Integer hour1 = Integer.parseInt(d1[3]);
+
+		Integer minute1 = Integer.parseInt(d1[4]);
+
+		Integer second1 = Integer.parseInt(d1[5]);
+
+		String[] d2 = date2.split(splitter);
+
+		Integer year2 = Integer.parseInt(d2[0]);
+
+		Integer m2 = Integer.parseInt(d2[1]);
+
+		Integer day2 = Integer.parseInt(d2[2]);
+
+		Integer hour2 = Integer.parseInt(d2[3]);
+
+		Integer minute2 = Integer.parseInt(d2[4]);
+
+		Integer second2 = Integer.parseInt(d2[5]);
+
+		if (year1.compareTo(year2) > 0) {
+			return false;
+		} else if (year1.compareTo(year2) == 0) {
+			if (m1.compareTo(m2) > 0) {
+				return false;
+			} else if (m1.compareTo(m2) == 0) {
+				if (day1.compareTo(day2) > 0) {
+					return false;
+				} else if (day1.compareTo(day2) == 0) {
+					if (hour1.compareTo(hour2) > 0) {
+						return false;
+					} else if (hour1.compareTo(hour2) == 0) {
+						if (minute1.compareTo(minute2) > 0) {
+							return false;
+						} else if (minute1.compareTo(minute2) == 0) {
+							if (second1.compareTo(second2) > 0) {
+								return false;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return true;
+
+	}
+
+	public static String getCollaboratorsPath(String project) {
+		String path = LocalPaths.PATH + project + "/collaborators/";
+		checkDirectory(path);
+		return path;
+	}
+
+	public static String getCollaboratorsFolderPath(String project) {
+		String path = getCollaboratorsPath(project) + "all/";
+		checkDirectory(path);
+		return path;
+	}
+
+	public static String getCommitsFolderPath(String project) {
+		String path = getCommitsPath(project) + "all/";
+		checkDirectory(path);
+		return path;
+	}
+
+	private static String getCommitsPath(String project) {
+		String path = LocalPaths.PATH + project + "/commits/";
+		checkDirectory(path);
+		return path;
+	}
 }

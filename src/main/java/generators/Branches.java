@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 
+import endpoints.CommitsAPI;
 import utils.Config;
 import utils.IO;
 import utils.JSONManager;
@@ -399,7 +400,7 @@ public class Branches {
 
 		List<String> branchesHashs = IO.readAnyFile(path + "branches_hashs.txt");
 
-		Commits.collectCommits(branchesHashs, url, path + "commits/");
+		CommitsAPI.downloadIndividualCommitsByHash(branchesHashs, url, path + "commits/");
 	}
 
 	

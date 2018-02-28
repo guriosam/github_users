@@ -12,6 +12,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 
+import endpoints.CommitsAPI;
+import objects.UserComment;
 import objects.UserCommit;
 import objects.UserIssue;
 import objects.UserPullRequest;
@@ -131,16 +133,15 @@ public class Issues {
 
 	}
 
-	public static HashMap<String, Integer> readComments(String project) {
+	public static HashMap<String, UserComment> readComments(String project, String userLogin, String authorDate) {
 
 		try {
 
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
-			List<String> commentsUrls = new ArrayList<>();
 			String path = LocalPaths.PATH + project + "/issues/comments/";
 			List<String> files = IO.filesOnFolder(path);
 
-			HashMap<String, Integer> userCount = new HashMap<String, Integer>();
+			HashMap<String, UserComment> userCount = new HashMap<String, UserComment>();
 
 			for (String file : files) {
 
@@ -152,12 +153,25 @@ public class Issues {
 					LinkedTreeMap user = (LinkedTreeMap) comment.get("user");
 					String login = (String) user.get("login");
 
-					if (!userCount.containsKey(login)) {
-						userCount.put(login, 0);
+					if (!login.equals(userLogin)) {
+						continue;
 					}
 
-					int count = userCount.get(login);
-					count++;
+					if (!userCount.containsKey(login)) {
+						userCount.put(login, new UserComment());
+					}
+					String created_at = (String) comment.get("created_at");
+
+					if (!authorDate.equals("")) {
+						if (!Util.checkPastDate(created_at, authorDate, "-")) {
+							continue;
+
+						}
+					}
+
+					UserComment count = userCount.get(login);
+					count.setCount(count.getCount() + 1);
+					count.setCreated_at(created_at);
 					userCount.replace(login, count);
 
 				}
@@ -181,8 +195,8 @@ public class Issues {
 		String path = LocalPaths.PATH + project + "/pull_requests.json";
 		List<UserPullRequest> userPull = new ArrayList<>();
 
-		//List<String> pullMerged = IO.readAnyFile(Util.getPullsFolder(project) + "heuristic1.txt");
-		//List<String> heuristc2 = IO.readAnyFile(Util.getPullsFolder(project) + "pull_requests_h2.txt");
+		List<String> pullMerged = IO.readAnyFile(Util.getPullsFolder(project) + "heuristic1.txt");
+		List<String> heuristc2 = IO.readAnyFile(Util.getPullsFolder(project) + "pull_requests_h2.txt");
 
 		int countH2 = 0;
 		int countH1 = 0;
@@ -196,43 +210,38 @@ public class Issues {
 				boolean m = false;
 				boolean h = true;
 				UserPullRequest upr = new UserPullRequest();
+				String id = "";
+
 				if (pull.containsKey("id")) {
 					String number = (String) pull.get("id");
 					upr.setId(number);
-/*
-					for (String pm : pullMerged) {
-						if (number.equals(pm)) {
-							m = true;
-						}
-					}
-
-					for (String pm : heuristc2) {
-						if (number.equals(pm)) {
-
-							if (!m) {
-								countH2++;
-							}
-
-							h = false;
-							m = true;
-
-						}
-					}
-	*/				
-					if(h && m){
-						countH1++;
-					}
+					id = number;
 
 				}
 				if (pull.containsKey("state")) {
 					upr.setState((String) pull.get("state"));
 
 				}
+				String name = "";
+				if (pull.containsKey("user")) {
+					String number = (String) pull.get("user");
+					upr.setUser(number);
+					name = number;
+				}
+				
 				if (pull.containsKey("merged")) {
-					if (m) {
+
+					if (pullMerged.contains(id)) {
+						upr.setMerged(true);
+						
+					} else if (heuristc2.contains(id)) {
 						upr.setMerged(true);
 					} else {
-						upr.setMerged((boolean) pull.get("merged"));
+						if (m) {
+							upr.setMerged(true);
+						} else {
+							upr.setMerged((boolean) pull.get("merged"));
+						}
 					}
 
 				}
@@ -241,9 +250,14 @@ public class Issues {
 						upr.setMerged_by((String) pull.get("merged_by"));
 					}
 				}
-				if (pull.containsKey("user")) {
-					String number = (String) pull.get("user");
-					upr.setUser(number);
+			
+				if (pull.containsKey("created_at")) {
+					String created_date = (String) pull.get("created_at");
+					upr.setCreated_at(created_date);
+				}
+				if (pull.containsKey("closed_at")) {
+					String closed_date = (String) pull.get("closed_at");
+					upr.setClosed_at(closed_date);
 				}
 
 				if (pull.containsKey("reviewers")) {
@@ -260,8 +274,6 @@ public class Issues {
 
 			}
 
-			System.out.println("Heuristic 1: " + countH1);
-			System.out.println("Heuristic 2: " + countH2);
 
 			return userPull;
 		} catch (Exception e) {
@@ -273,7 +285,7 @@ public class Issues {
 	}
 
 	public static void readPullRequests(String project) {
-		
+
 		System.out.println("Reading Pull Requests");
 
 		try {
@@ -307,6 +319,16 @@ public class Issues {
 
 				if (pull.containsKey("state")) {
 					upr.setState((String) pull.get("state"));
+
+				}
+
+				if (pull.containsKey("created_at")) {
+					upr.setCreated_at((String) pull.get("created_at"));
+
+				}
+
+				if (pull.containsKey("closed_at")) {
+					upr.setClosed_at((String) pull.get("closed_at"));
 
 				}
 				if (pull.containsKey("merged")) {
@@ -357,7 +379,7 @@ public class Issues {
 	public static void generatePullsCalls(String project, String url) {
 
 		System.out.println("Generating Pulls Calls");
-		
+
 		String path = Util.getGeneralPullsFolder(project);
 
 		for (int i = 1; i < 2000; i++) {
@@ -378,7 +400,7 @@ public class Issues {
 
 		String path = Util.getIssuesCommentsPath(project);
 
-		for (int i = 1; i < 5000; i++) {
+		for (int i = 1; i < 10000; i++) {
 
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 					+ " \"https://api.github.com/repos/" + url + "/issues/comments?page=" + i + "\"";
@@ -412,25 +434,6 @@ public class Issues {
 					+ " \"https://api.github.com/repos/" + url + "/issues/" + id + "\"";
 
 			JSONManager.getJSON(path + "individual/" + id + ".json", command);
-
-		}
-
-	}
-
-	public static void generateRepositoryIssuesCall(String project, String url) {
-
-		// repos/:owner/:repo/issues
-		String path = Util.getGeneralIssuesPath(project);
-
-		for (int i = 1; i < 1000; i++) {
-			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/issues?state=all&page=" + i + "\"";
-
-			boolean empty = JSONManager.getJSON(path + i + ".json", command);
-
-			if (empty) {
-				break;
-			}
 
 		}
 
@@ -521,7 +524,7 @@ public class Issues {
 		for (String key : matchesByUser.keySet()) {
 			List<String> matches = matchesByUser.get(key);
 			String pathUser = LocalPaths.PATH + project + "/users/" + key + "/pulls/commits/";
-			Commits.collectCommits(matches, url, pathUser);
+			CommitsAPI.downloadIndividualCommitsByHash(matches, url, pathUser);
 
 			for (String pull : pulls) {
 
@@ -536,11 +539,11 @@ public class Issues {
 			IO.writeAnyFile(LocalPaths.PATH + project + "/users/" + key + "/pulls/commits_hashs_missing.txt", matches);
 
 		}
-		
-		for(String p : realPulls){
+
+		for (String p : realPulls) {
 			realPulls2.add(p);
 		}
-		
+
 		IO.writeAnyFile(Util.getPullsFolder(project) + "heuristic1.txt", realPulls2);
 	}
 

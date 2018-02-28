@@ -1,24 +1,18 @@
 package generators;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
-import org.eclipse.egit.github.core.Repository;
-import org.eclipse.egit.github.core.client.GitHubClient;
-import org.eclipse.egit.github.core.service.RepositoryService;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 
+import objects.CommitInfo;
+import objects.UserPoint;
 import objects.UserProfile;
 import utils.Config;
 import utils.IO;
@@ -170,24 +164,76 @@ public class Users {
 
 	}
 
-	public static void downloadUsersCommitsBatches(String project, String url) {
-		System.out.println("Downloading Users Commits Batches");
 
-		List<String> names = Util.getBuggyUsers(project);
+	public static List<UserPoint> organizePoints(String project) {
+		// TODO Auto-generated method stub
 
-		for (String name : names) {
-			System.out.println(name);
-			String path = Util.getUserPath(project, name);
-			for (int j = 1; j < 10000; j++) {
-				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-						+ " \"https://api.github.com/repos/" + url + "/commits?author=" + name + "&page=" + j + "\"";
-				boolean empty = JSONManager.getJSON(path + j + ".json", command);
-				if (empty) {
-					break;
-				}
+		List<String> users = Util.getUserInfo(project);
+		HashMap<String, List<CommitInfo>> userPoint = new HashMap<>();
+		List<UserPoint> userPoints = new ArrayList<>();
+
+		for (String line : users) {
+
+			String[] l = line.split(",");
+
+			String hash = l[0];
+			hash = hash.replace("\"", "");
+
+			String user = l[1];
+			user = user.replace("\"", "");
+
+			if (user.equals("NA")) {
+				continue;
 			}
 
+			String authorDate = l[4];
+			authorDate = authorDate.replace("\"", "");
+
+			// UserPoint p = new UserPoint();
+			// p.setName(user);
+
+			CommitInfo commit = new CommitInfo();
+			commit.setHash(hash);
+			commit.setDate(authorDate);
+
+			if (!userPoint.containsKey(user)) {
+				// p.setCommitInfo(new ArrayList<CommitInfo>());
+				userPoint.put(user, new ArrayList<CommitInfo>());
+			}
+
+			userPoint.get(user).add(commit);
+
 		}
+
+		for (String k : userPoint.keySet()) {
+
+			List<CommitInfo> info = userPoint.get(k);
+
+			for (int i = 0; i < info.size() - 1; i++) {
+				for (int j = i + 1; j < info.size(); j++) {
+					if (!Util.checkPastDate(info.get(i).getDate(), info.get(j).getDate(), "-")) {
+						CommitInfo aux = info.get(i);
+						info.set(i, info.get(j));
+						info.set(j, aux);
+					}
+				}
+
+			}
+
+			UserPoint point = new UserPoint();
+			point.setName(k);
+			point.setCommitInfo(info);
+
+			userPoints.add(point);
+
+			//System.out.println(k);
+			//for (CommitInfo c : info) {
+			//	System.out.println(c.getDate() + ": " + c.getHash());
+			//}
+
+		}
+
+		return userPoints;
 
 	}
 
