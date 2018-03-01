@@ -1072,31 +1072,73 @@ public class Commits {
 
 	}
 
-	//
-	/*public static void downloadUserCommitsFromMaster(String project, String url) {
+	public static void collectHashsFromUsers(String project) {
 
-		List<String> users = Util.getBuggyUsers(project);
+		String path = Util.getCommitsFolderPath(project);
 
-		for (String user : users) {
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		List<String> files = IO.filesOnFolder(path);
 
-			List<UserCommit> userCommits = mineCommits(Util.getUserPath(project, user), Util.getUserPath(project, user),
-					user);
-			List<String> hashs = new ArrayList<>();
+		HashMap<String, List<String>> userHashs = new HashMap<>();
+		List<String> allHashs = new ArrayList<>();
 
-			for (UserCommit uc : userCommits) {
-				hashs.add(uc.getSha());
+		for (String file : files) {
+			try {
+				String fileData = new String(Files.readAllBytes(Paths.get(path + file)));
+
+				List<LinkedTreeMap> commits = gson.fromJson(fileData, List.class);
+
+				for (LinkedTreeMap commit : commits) {
+
+					String author = "";
+					String hash = "";
+
+					if (commit.containsKey("author")) {
+						LinkedTreeMap a = (LinkedTreeMap) commit.get("author");
+
+						if (a != null) {
+							if (a.containsKey("login")) {
+								author = (String) a.get("login");
+							}
+						} else {
+							a = (LinkedTreeMap) commit.get("commit");
+							if (a.containsKey("author")) {
+								LinkedTreeMap b = (LinkedTreeMap) a.get("author");
+
+								if (b.containsKey("name")) {
+									author = (String) b.get("name");
+								}
+							}
+						}
+					}
+
+					if (commit.containsKey("sha")) {
+						hash = (String) commit.get("sha");
+					}
+
+					if (!userHashs.containsKey(author)) {
+						userHashs.put(author, new ArrayList<>());
+					}
+
+					List<String> hashs = userHashs.get(author);
+					hashs.add(hash);
+					allHashs.add(hash);
+					userHashs.replace(author, hashs);
+
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-
-			String path = Util.getUserCommitsPath(project, user);
-
-			CommitsAPI.downloadIndividualCommitsByHash(hashs, url, path);
-
-			IO.writeAnyFile(Util.getUserPath(project, user) + "hashs.txt", hashs);
 
 		}
 
-	}*/
+		String output = gson.toJson(userHashs);
 
-	
+		IO.writeAnyString(Util.getCommitsPath(project) + "users_hashs.json", output);
+
+		IO.writeAnyFile(Util.getCommitsPath(project) + "all_hashs.txt", allHashs);
+
+	}
 
 }

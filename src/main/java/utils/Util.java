@@ -319,8 +319,14 @@ public class Util {
 		return path;
 	}
 
-	private static String getCommitsPath(String project) {
+	public static String getCommitsPath(String project) {
 		String path = LocalPaths.PATH + project + "/commits/";
+		checkDirectory(path);
+		return path;
+	}
+	
+	public static String getIndividualCommitsPath(String project){
+		String path = getCommitsPath(project) + "individual/";
 		checkDirectory(path);
 		return path;
 	}

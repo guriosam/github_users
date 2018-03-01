@@ -16,7 +16,6 @@ public class CommitsAPI {
 		for (String hash : hashs) {
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 					+ " \"https://api.github.com/repos/" + url + "/commits/" + hash + "\"";
-
 			boolean empty = JSONManager.getJSON(path + hash + ".json", command);
 
 			if (empty) {
@@ -46,20 +45,21 @@ public class CommitsAPI {
 
 	public static void downloadAllCommits(String project, String url) {
 		String path = Util.getCommitsFolderPath(project);
-		//List<String> commands = new ArrayList<>();
+		// List<String> commands = new ArrayList<>();
 		for (int j = 1; j < 10000; j++) {
-			String command = "curl -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 					+ " \"https://api.github.com/repos/" + url + "/commits?page=" + j + "\"";
-			//System.out.println(command);
-			//commands.add(command);
 			boolean empty = JSONManager.getJSON(path + j + ".json", command);
 			if (empty) {
 				break;
 			}
 		}
-		
-		//IO.writeAnyFile(path + "download_commits.sh", commands);
 
 	}
 
+	public static void downloadAllIndividualCommits(String project, String url) {
+		List<String> hashs = IO.readAnyFile(Util.getCommitsPath(project) + "all_hashs.txt");
+
+		downloadIndividualCommitsByHash(hashs, url, Util.getIndividualCommitsPath(project));
+	}
 }

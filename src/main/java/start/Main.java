@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import endpoints.CommitsAPI;
+import generators.Commits;
 
 public class Main {
 
@@ -12,34 +13,35 @@ public class Main {
 		List<String> projects = new ArrayList<>();
 		List<String> urls = new ArrayList<>();
 
-		/*projects.add("elasticsearch");
-		urls.add("elastic/elasticsearch");
-		projects.add("spring-boot");
-		urls.add("spring-projects/spring-boot");
-		projects.add("netty");
-		urls.add("netty/netty");
-		projects.add("bazel");
-		urls.add("bazelbuild/bazel");
-		projects.add("presto");
+		//projects.add("elasticsearch");
+		//urls.add("elastic/elasticsearch");
+		//projects.add("spring-boot");
+		//urls.add("spring-projects/spring-boot");
+		//projects.add("netty");
+		//urls.add("netty/netty");
+		//projects.add("bazel");
+		//urls.add("bazelbuild/bazel");
+		/*projects.add("presto");
 		urls.add("prestodb/presto");
 		projects.add("Signal-Android");
-		urls.add("WhisperSystems/Signal-Android");
+		urls.add("signalapp/Signal-Android");
 		projects.add("okhttp");
 		urls.add("square/okhttp");
 		*/
-		projects.add("elasticsearch-hadoop");
-		urls.add("elastic/elasticsearch-hadoop");
-		/*projects.add("HikariCP");
-		urls.add("brettwooldridge/HikariCP");
-		projects.add("ExoPlayer");
-		urls.add("google/ExoPlayer");
-		projects.add("MaterialDrawer");
-		urls.add("mikepenz/MaterialDrawer");
+		
+		//projects.add("elasticsearch-hadoop");
+		//urls.add("elastic/elasticsearch-hadoop");
+		//projects.add("HikariCP");
+		//urls.add("brettwooldridge/HikariCP");
+		//projects.add("ExoPlayer");
+		//urls.add("google/ExoPlayer");
+		//projects.add("MaterialDrawer");
+		//urls.add("mikepenz/MaterialDrawer");
 		projects.add("Hystrix");
 		urls.add("Netflix/Hystrix");
 		projects.add("material-dialogs");
 		urls.add("afollestad/material-dialogs");
-		projects.add("guava");
+		/*projects.add("guava");
 		urls.add("google/guava");
 		projects.add("glide");
 		urls.add("bumptech/glide");
@@ -54,9 +56,11 @@ public class Main {
 
 			String project = projects.get(i);
 			String url = urls.get(i);
+			System.out.println(project);
 			
-			CommitsAPI.downloadAllCommits(project, url);
-
+			//CommitsAPI.downloadAllCommits(project, url);
+			//Commits.collectHashsFromUsers(project);
+			CommitsAPI.downloadAllIndividualCommits(project, url);
 			//Git.cloneProject(url);
 
 			// System.out.println("********** " + project.toUpperCase() + "
