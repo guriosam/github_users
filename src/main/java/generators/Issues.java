@@ -74,7 +74,7 @@ public class Issues {
 		try {
 
 			String path = Util.getIssuesPath(project);
-			List<String> ids = IO.readAnyFile(path + "ids.txt");
+			List<String> ids = IO.readAnyFile(path + "issues_ids.txt");
 
 			List<UserIssue> userIssues = new ArrayList<>();
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -195,8 +195,8 @@ public class Issues {
 		String path = LocalPaths.PATH + project + "/pull_requests.json";
 		List<UserPullRequest> userPull = new ArrayList<>();
 
-		List<String> pullMerged = IO.readAnyFile(Util.getPullsFolder(project) + "heuristic1.txt");
-		List<String> heuristc2 = IO.readAnyFile(Util.getPullsFolder(project) + "pull_requests_h2.txt");
+		List<String> heuristic1 = IO.readAnyFile(Util.getPullsFolder(project) + "h1_ids.txt");
+		List<String> heuristic2 = IO.readAnyFile(Util.getPullsFolder(project) + "pull_requests_h2.txt");
 
 		int countH2 = 0;
 		int countH1 = 0;
@@ -208,7 +208,6 @@ public class Issues {
 			for (LinkedTreeMap pull : pulls) {
 
 				boolean m = false;
-				boolean h = true;
 				UserPullRequest upr = new UserPullRequest();
 				String id = "";
 
@@ -216,6 +215,13 @@ public class Issues {
 					String number = (String) pull.get("id");
 					upr.setId(number);
 					id = number;
+
+					if (heuristic1.contains(id)) {
+						m = true;
+					}
+					if (heuristic2.contains(id)) {
+						m = true;
+					}
 
 				}
 				if (pull.containsKey("state")) {
@@ -228,21 +234,15 @@ public class Issues {
 					upr.setUser(number);
 					name = number;
 				}
-				
+
 				if (pull.containsKey("merged")) {
 
-					if (pullMerged.contains(id)) {
-						upr.setMerged(true);
-						
-					} else if (heuristc2.contains(id)) {
+					if (m) {
 						upr.setMerged(true);
 					} else {
-						if (m) {
-							upr.setMerged(true);
-						} else {
-							upr.setMerged((boolean) pull.get("merged"));
-						}
+						upr.setMerged((boolean) pull.get("merged"));
 					}
+					// }
 
 				}
 				if (pull.containsKey("merged_by")) {
@@ -250,7 +250,7 @@ public class Issues {
 						upr.setMerged_by((String) pull.get("merged_by"));
 					}
 				}
-			
+
 				if (pull.containsKey("created_at")) {
 					String created_date = (String) pull.get("created_at");
 					upr.setCreated_at(created_date);
@@ -273,7 +273,6 @@ public class Issues {
 				userPull.add(upr);
 
 			}
-
 
 			return userPull;
 		} catch (Exception e) {

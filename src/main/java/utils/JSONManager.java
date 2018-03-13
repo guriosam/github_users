@@ -54,6 +54,10 @@ public class JSONManager {
 					if (a.contains("X-GitHub-Request-Id")) {
 						read = true;
 					}
+					
+					if(a.contains("400 Bad Request")){
+						return true;
+					}
 
 					if (!read) {
 						if (a.contains("Status:")) {
@@ -65,7 +69,6 @@ public class JSONManager {
 								}
 								
 								if(a.contains("404")){
-								//	System.out.println(command);
 									return true;
 								}
 

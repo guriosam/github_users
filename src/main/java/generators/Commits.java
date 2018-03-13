@@ -11,12 +11,12 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 
-import endpoints.CommitsAPI;
 import objects.CommitInfo;
 import objects.CommitSize;
 import objects.NatureCommit;
@@ -26,9 +26,7 @@ import objects.UserInfo;
 import objects.UserIssue;
 import objects.UserPoint;
 import objects.UserPullRequest;
-import utils.Config;
 import utils.IO;
-import utils.JSONManager;
 import utils.LocalPaths;
 import utils.Util;
 
@@ -37,9 +35,16 @@ public class Commits {
 	@SuppressWarnings("unchecked")
 	public static void analyzeCommits(String project, List<UserPoint> userPoints) {
 
+		List<String> buggyHashs = new ArrayList<>();
+		for (UserPoint up : userPoints) {
+			for (CommitInfo ci : up.getCommitInfo()) {
+				buggyHashs.add(ci.getHash());
+			}
+		}
+
 		boolean approach = true;
 		boolean heuristics = false;
-		boolean withPulls = true;
+		boolean withPulls = false;
 
 		if (withPulls) {
 			if (heuristics) {
@@ -51,9 +56,9 @@ public class Commits {
 			System.out.println("** No Pulls **");
 		}
 
-		List<String> info = Util.getUserInfo(project);
 		List<UserInfo> jsonUsers = new ArrayList<>();
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		
 		List<UserPullRequest> userPull = Issues.getPullRequests(project);
 
 		List<UserIssue> userIssues = Issues.readIssues(project);
@@ -230,6 +235,8 @@ public class Commits {
 						userCommitsSize = userCommits.size() + userPullCommits.size();
 						userInfo.setCommitsPulls(userPullCommits.size());
 					}
+
+					userInfo.setBuggy(cm.isBuggy());
 
 					userInfo.setCommits(userCommitsSize);
 
@@ -590,7 +597,6 @@ public class Commits {
 
 			} else {
 				files = IO.readAnyFile(pathInput + "commits_hashs.txt");
-
 				pulls = true;
 
 			}
@@ -948,9 +954,19 @@ public class Commits {
 			}
 
 			DateTime dt = new DateTime(DateTimeZone.UTC);
-			long date = dt.parse(uc.getDate()).getMillis();
-			long minimum = dt.parse(minimumDate).getMillis();
-			long maximum = dt.parse(maximumDate).getMillis();
+			LocalDateTime ldt = new LocalDateTime(DateTimeZone.UTC);
+			long date = 0;
+			long minimum = 0;
+			long maximum = 0;
+			try {
+				date = dt.parse(uc.getDate()).getMillis();
+				minimum = dt.parse(minimumDate).getMillis();
+				maximum = dt.parse(maximumDate).getMillis();
+			} catch (Exception e) {
+				date = ldt.parse(uc.getDate().replace("Z", "")).getMillisOfDay();
+				minimum = ldt.parse(minimumDate).getMillisOfDay();
+				maximum = ldt.parse(maximumDate).getMillisOfDay();
+			}
 
 			if (uc.getDate().contains("T")) {
 
@@ -1080,6 +1096,7 @@ public class Commits {
 		List<String> files = IO.filesOnFolder(path);
 
 		HashMap<String, List<String>> userHashs = new HashMap<>();
+		HashMap<String, List<String>> hashDates = new HashMap<>();
 		List<String> allHashs = new ArrayList<>();
 
 		for (String file : files) {
@@ -1092,6 +1109,7 @@ public class Commits {
 
 					String author = "";
 					String hash = "";
+					String date = "";
 
 					if (commit.containsKey("author")) {
 						LinkedTreeMap a = (LinkedTreeMap) commit.get("author");
@@ -1099,6 +1117,15 @@ public class Commits {
 						if (a != null) {
 							if (a.containsKey("login")) {
 								author = (String) a.get("login");
+							}
+
+							a = (LinkedTreeMap) commit.get("commit");
+							if (a.containsKey("author")) {
+								LinkedTreeMap b = (LinkedTreeMap) a.get("author");
+
+								if (b.containsKey("date")) {
+									date = (String) b.get("date");
+								}
 							}
 						} else {
 							a = (LinkedTreeMap) commit.get("commit");
@@ -1108,8 +1135,13 @@ public class Commits {
 								if (b.containsKey("name")) {
 									author = (String) b.get("name");
 								}
+
+								if (b.containsKey("date")) {
+									date = (String) b.get("date");
+								}
 							}
 						}
+
 					}
 
 					if (commit.containsKey("sha")) {
@@ -1117,13 +1149,20 @@ public class Commits {
 					}
 
 					if (!userHashs.containsKey(author)) {
-						userHashs.put(author, new ArrayList<>());
+						userHashs.put(author, new ArrayList<String>());
+					}
+					if (!hashDates.containsKey(author)) {
+						hashDates.put(author, new ArrayList<String>());
 					}
 
 					List<String> hashs = userHashs.get(author);
 					hashs.add(hash);
 					allHashs.add(hash);
 					userHashs.replace(author, hashs);
+
+					List<String> dates = hashDates.get(author);
+					dates.add(date);
+					hashDates.replace(author, dates);
 
 				}
 
@@ -1133,11 +1172,25 @@ public class Commits {
 
 		}
 
-		String output = gson.toJson(userHashs);
+		String output = "user, hash, date\n";
+		for (String k : userHashs.keySet()) {
+			for (int i = 0; i < userHashs.get(k).size(); i++) {
+				output += k + "," + userHashs.get(k).get(i) + "," + hashDates.get(k).get(i) + "\n";
+			}
+		}
 
-		IO.writeAnyString(Util.getCommitsPath(project) + "users_hashs.json", output);
+		// System.out.println(output);
 
-		IO.writeAnyFile(Util.getCommitsPath(project) + "all_hashs.txt", allHashs);
+		System.out.println(Util.getCommitsPath(project));
+		IO.writeAnyString(Util.getCommitsPath(project) + "users_hashs.csv", output);
+
+		// String output = gson.toJson(userHashs);
+
+		// IO.writeAnyString(Util.getCommitsPath(project) + "users_hashs.json",
+		// output);
+
+		// IO.writeAnyFile(Util.getCommitsPath(project) + "all_hashs.txt",
+		// allHashs);
 
 	}
 

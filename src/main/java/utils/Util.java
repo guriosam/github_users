@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -42,7 +43,7 @@ public class Util {
 		return users;
 	}
 
-	public static List<String> getUserInfo(String project) {
+	public static List<String> getBuggyUserInfo(String project) {
 
 		List<String> buggyUsers = IO.readAnyFile(
 				LocalPaths.PROJECT_PATH + "insertion_points" + "/insertion_points_data_" + project + ".csv");
@@ -55,6 +56,53 @@ public class Util {
 			}
 
 			users.add(buggy);
+		}
+
+		return users;
+	}
+
+	public static List<String> getUserList(String project){
+		List<String> buggy = getBuggyUsers(project);
+		List<String> clean = getCleanUsers(project);
+		
+		List<String> users = new ArrayList<>();
+		users.addAll(buggy);
+		users.addAll(clean);
+		
+		
+		return users;
+	}
+	
+	public static List<String> getCleanUsers(String project){
+		List<String> clean = getUserInfo(project);
+		HashSet<String> users = new HashSet<>();
+		List<String> names = new ArrayList<>();
+		
+		for(String c : clean){
+			String[] c1 = c.split(",");
+			users.add(c1[0]);
+		}
+		
+		for(String s : users){
+			names.add(s);
+		}
+		
+		return names;
+		
+	}
+	
+	public static List<String> getUserInfo(String project) {
+
+		List<String> cleanUsers = IO.readAnyFile(getCommitsPath(project) + "users_hashs.csv");
+
+		List<String> users = new ArrayList<>();
+
+		for (String clean : cleanUsers) {
+			if (clean.contains("hash")) {
+				continue;
+			}
+
+			users.add(clean);
 		}
 
 		return users;
@@ -324,10 +372,11 @@ public class Util {
 		checkDirectory(path);
 		return path;
 	}
-	
-	public static String getIndividualCommitsPath(String project){
+
+	public static String getIndividualCommitsPath(String project) {
 		String path = getCommitsPath(project) + "individual/";
 		checkDirectory(path);
 		return path;
 	}
+
 }

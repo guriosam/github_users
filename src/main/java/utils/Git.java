@@ -15,6 +15,16 @@ public class Git {
 			// TODO: handle exception
 		}
 	}
+	
+	public static void generateHashs(String project){
+		try {
+			Process p = Runtime.getRuntime().exec("git --git-dir=" + LocalPaths.PATH_GIT + project + " log --pretty=format:%H > hashs.txt");
+			System.out.println("git --git-dir=" + LocalPaths.PATH_GIT + project + " log --pretty=format:%H > hashs.txt");
+		} catch (Exception e) {
+			e.printStackTrace();
+			// TODO: handle exception
+		}
+	}
 
 	/*public static void generateHashsByUser(String project, List<UserPoint> userPoints) {
 

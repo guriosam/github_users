@@ -4,7 +4,9 @@ import java.util.List;
 
 import org.apache.commons.collections.ComparatorUtils;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
+import org.joda.time.LocalDateTime;
 
 import utils.Util;
 
@@ -12,6 +14,7 @@ public class UserInfo {
 
 	private String hash;
 	private String login;
+	private boolean buggy;
 	private int commits;
 	private double meanCommits;
 	private double medianCommits;
@@ -187,7 +190,7 @@ public class UserInfo {
 		Util.sortList(datesToOrder);
 
 		if (datesToOrder.size() > 0) {
-			timeOnProject = (Days.daysBetween(DateTime.parse(datesToOrder.get(0)), DateTime.parse(maximumDate))
+			timeOnProject = (Days.daysBetween(LocalDateTime.parse(datesToOrder.get(0)), LocalDateTime.parse(maximumDate))
 					.getDays() + 1);
 		} else {
 			timeOnProject = 0;
@@ -296,10 +299,11 @@ public class UserInfo {
 	}
 
 	public void setMeanCommits(String minimumDate, String maximumDate) {
+		
 
-		if (Days.daysBetween(DateTime.parse(minimumDate), DateTime.parse(maximumDate)).getDays() >= 0) {
+		if (Days.daysBetween(LocalDateTime.parse(minimumDate), LocalDateTime.parse(maximumDate)).getDays() >= 0) {
 			meanCommits = (double) commits
-					/ (Days.daysBetween(DateTime.parse(minimumDate), DateTime.parse(maximumDate)).getDays() + 1);
+					/ (Days.daysBetween(LocalDateTime.parse(minimumDate), LocalDateTime.parse(maximumDate)).getDays() + 1);
 		} else {
 			meanCommits = (double) commits;
 		}
@@ -496,6 +500,14 @@ public class UserInfo {
 
 	public void setUncategorizedCount(int uncategorizedCount) {
 		this.uncategorizedCount = uncategorizedCount;
+	}
+
+	public boolean isBuggy() {
+		return buggy;
+	}
+
+	public void setBuggy(boolean buggy) {
+		this.buggy = buggy;
 	}
 
 }

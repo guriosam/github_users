@@ -164,11 +164,10 @@ public class Users {
 
 	}
 
-
 	public static List<UserPoint> organizePoints(String project) {
 		// TODO Auto-generated method stub
 
-		List<String> users = Util.getUserInfo(project);
+		List<String> users = Util.getBuggyUserInfo(project);
 		HashMap<String, List<CommitInfo>> userPoint = new HashMap<>();
 		List<UserPoint> userPoints = new ArrayList<>();
 
@@ -195,6 +194,30 @@ public class Users {
 			CommitInfo commit = new CommitInfo();
 			commit.setHash(hash);
 			commit.setDate(authorDate);
+			commit.setBuggy(true);
+
+			if (!userPoint.containsKey(user)) {
+				// p.setCommitInfo(new ArrayList<CommitInfo>());
+				userPoint.put(user, new ArrayList<CommitInfo>());
+			}
+
+			userPoint.get(user).add(commit);
+
+		}
+
+		List<String> cleanUsers = Util.getUserInfo(project);
+
+		for (String line : cleanUsers) {
+			String[] l = line.split(",");
+
+			String hash = l[1];
+			String user = l[0];
+			String date = l[2];
+
+			CommitInfo commit = new CommitInfo();
+			commit.setHash(hash);
+			commit.setDate(date);
+			commit.setBuggy(false);
 
 			if (!userPoint.containsKey(user)) {
 				// p.setCommitInfo(new ArrayList<CommitInfo>());
@@ -226,10 +249,10 @@ public class Users {
 
 			userPoints.add(point);
 
-			//System.out.println(k);
-			//for (CommitInfo c : info) {
-			//	System.out.println(c.getDate() + ": " + c.getHash());
-			//}
+			// System.out.println(k);
+			// for (CommitInfo c : info) {
+			// System.out.println(c.getDate() + ": " + c.getHash());
+			// }
 
 		}
 

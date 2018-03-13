@@ -19,6 +19,7 @@ import objects.UserInfo;
 import objects.UserPoint;
 import objects.UserPullRequest;
 import utils.Config;
+import utils.Git;
 import utils.IO;
 import utils.JSONManager;
 import utils.LocalPaths;
@@ -208,16 +209,17 @@ public class PullRequests {
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static void generatePullsIds(String project, boolean merged) {
+	public static void generatePullsIds(String project) {
 
+		String f = "";
 		try {
 
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 			String path = Util.getIndividualPullsFolder(project);
 			List<String> files = IO.filesOnFolder(path);
 			List<String> pulls = new ArrayList<>();
+			List<String> pullsInfo = new ArrayList<>();
 			List<String> hashs = new ArrayList<>();
-			List<String> names = Util.getBuggyUsers(project);
 
 			for (String file : files) {
 
@@ -225,22 +227,36 @@ public class PullRequests {
 					continue;
 				}
 
+				f = file;
 				String fileData = new String(Files.readAllBytes(Paths.get(path + file)));
 				LinkedTreeMap pull = gson.fromJson(fileData, LinkedTreeMap.class);
 
-				UserPullRequest upr = new UserPullRequest();
+				String login = "";
+				String hash = "";
 
-				if (pull.containsKey("merged")) {
-					upr.setMerged((boolean) pull.get("merged"));
-					if (upr.isMerged() != merged) {
+				if (pull.containsKey("user")) {
+
+					LinkedTreeMap user = (LinkedTreeMap) pull.get("user");
+					if (user == null) {
 						continue;
 					}
 
-					if (pull.containsKey("merge_commit_sha")) {
-						String hash = (String) pull.get("merge_commit_sha");
-						hashs.add(hash);
-					}
+					login = (String) user.get("login");
 
+				} else {
+					continue;
+				}
+
+				boolean merged = false;
+
+				if (pull.containsKey("merged")) {
+
+					merged = (boolean) pull.get("merged");
+
+					if (pull.containsKey("merge_commit_sha")) {
+						hash = (String) pull.get("merge_commit_sha");
+						hashs.add(login + "," + hash + "," + merged);
+					}
 				}
 
 				if (pull.containsKey("head")) {
@@ -256,50 +272,26 @@ public class PullRequests {
 
 				}
 
-				if (pull.containsKey("user")) {
-
-					LinkedTreeMap user = (LinkedTreeMap) pull.get("user");
-					if (user == null) {
-						continue;
-					}
-
-					String login = (String) user.get("login");
-
-					boolean buggyUser = false;
-					for (String name : names) {
-						if (login.equals(name)) {
-							buggyUser = true;
-							break;
-						}
-					}
-
-					if (!buggyUser) {
-						continue;
-					}
-
-				} else {
-					continue;
-				}
+				String number = "";
 
 				if (pull.containsKey("number")) {
-					String number = pull.get("number") + "";
+					number = pull.get("number") + "";
 					number = number.replace(".", "");
 					number = number.substring(0, number.length() - 1);
-					upr.setId(number);
 
-					pulls.add(number);
+					pulls.add(login + "," + number + "," + merged);
 				}
 
+				pullsInfo.add(login + "," + number + "," + hash + "," + merged);
+
 			}
 
-			if (merged) {
-				IO.writeAnyFile(Util.getPullsFolder(project) + "merged_pulls_ids.txt", pulls);
-				IO.writeAnyFile(Util.getPullsFolder(project) + "merged_pulls_hashs.txt", hashs);
-			} else {
-				IO.writeAnyFile(Util.getPullsFolder(project) + "users_pulls_not_merged.txt", pulls);
-			}
+			IO.writeAnyFile(Util.getPullsFolder(project) + "pulls_ids.txt", pulls);
+			IO.writeAnyFile(Util.getPullsFolder(project) + "pulls_hashs.txt", hashs);
+			IO.writeAnyFile(Util.getPullsFolder(project) + "pulls_info.txt", pullsInfo);
 
 		} catch (Exception e) {
+			System.out.println(f);
 			e.printStackTrace();
 		}
 
@@ -307,7 +299,7 @@ public class PullRequests {
 
 	public static void collectPullCommitsByUser(String project, String url) {
 
-		List<String> names = Util.getBuggyUsers(project);
+		List<String> names = Util.getUserList(project);
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		int count = 0;
 
@@ -381,7 +373,7 @@ public class PullRequests {
 	public static void collectPullCommitsHashs(String project) {
 
 		String path = Util.getPullCommitsPath(project);
-		List<String> folders = IO.filesOnFolder(path + "general_not_merged/");
+		List<String> folders = IO.filesOnFolder(path + "general/");
 
 		HashSet<String> pullsMerged = new HashSet<>();
 
@@ -391,7 +383,7 @@ public class PullRequests {
 
 		for (String folder : folders) {
 
-			List<String> files = IO.filesOnFolder(path + "general_not_merged/" + folder + "/");
+			List<String> files = IO.filesOnFolder(path + "general/" + folder + "/");
 
 			for (String file : files) {
 
@@ -402,7 +394,7 @@ public class PullRequests {
 				try {
 
 					String fileData = new String(
-							Files.readAllBytes(Paths.get(path + "general_not_merged/" + folder + "/" + file)));
+							Files.readAllBytes(Paths.get(path + "general/" + folder + "/" + file)));
 
 					List<LinkedTreeMap> commits = gson.fromJson(fileData, List.class);
 
@@ -439,63 +431,7 @@ public class PullRequests {
 			}
 		}
 
-		List<String> pullsMergedList = new ArrayList<>();
-
-		for (String pullMerged : pullsMerged) {
-			pullsMergedList.add(pullMerged);
-		}
-
-		Util.sortList(pullsMergedList);
-
-		List<String> heuristic2 = IO.readAnyFile(LocalPaths.PATH + project + "/pulls/" + "pull_requests_h2.txt");
-
-		// Só existe em H1
-
-		List<String> distinct1 = new ArrayList<>();
-
-		// Só existe em H2
-		List<String> distinct2 = new ArrayList<>();
-
-		Util.sortList(pullsMergedList);
-
-		// Getting distinct
-		for (String h2 : heuristic2) {
-			boolean b = true;
-			for (String mpr : pullsMergedList) {
-				if (mpr.equals(h2)) {
-					b = false;
-					break;
-				}
-			}
-			if (b) {
-				distinct2.add(h2);
-			}
-		}
-
-		int count = 0;
-		for (String mpr : pullsMergedList) {
-			boolean b = true;
-			for (String prH2 : heuristic2) {
-				if (prH2.equals(mpr)) {
-					b = false;
-					break;
-				}
-			}
-			if (b) {
-				distinct1.add(mpr);
-			}
-		}
-
-		Util.sortList(distinct1);
-		List<String> h1 = IO.readAnyFile(LocalPaths.PATH + project + "/pulls/" + "merged_pulls_ids.txt");
-
-		System.out.println("Heuristic 1: " + distinct1.size());
-		System.out.println("Heuristic 2: " + distinct2.size()); //
-
-		IO.writeAnyFile(LocalPaths.PATH + project + "/pulls/" + "pulls_distinct.txt", distinct2);
-
-		IO.writeAnyFile(path + "hashs_commits_not_merged.txt", hashs);
-		IO.writeAnyFile(LocalPaths.PATH + project + "/pulls/" + "pulls_merged_git.txt", pullsMergedList);
+		// IO.writeAnyFile(path + "pulls_hashs.txt", hashs);
 
 	}
 
@@ -534,17 +470,11 @@ public class PullRequests {
 
 	}
 
-	public static void collectCommitsOnPullRequests(String project, String url, boolean merged) {
+	public static void collectCommitsOnPullRequests(String project, String url) {
 
 		String path = Util.getPullsFolder(project);
 		String pathCommits = Util.getPullCommitsPath(project);
-		String subPath = "";
-
-		if (merged) {
-			subPath = "general/";
-		} else {
-			subPath = "general_not_merged/";
-		}
+		String subPath = "general/";
 
 		File f = new File(pathCommits);
 
@@ -554,20 +484,17 @@ public class PullRequests {
 			f.mkdirs();
 		}
 
-		List<String> pullIds = new ArrayList<>();
-		if (merged) {
-			pullIds = IO.readAnyFile(path + "merged_pulls_ids.txt");
-		} else {
-			pullIds = IO.readAnyFile(path + "users_pulls_not_merged.txt");
-			pullIds.addAll(IO.readAnyFile(path + "pull_requests_h2.txt"));
-		}
+		List<String> pullIds = IO.readAnyFile(path + "pulls_ids.txt");
 
 		File f1 = new File(pathCommits + subPath);
 		if (!f1.exists()) {
 			f1.mkdir();
 		}
 
-		for (String id : pullIds) {
+		for (String line : pullIds) {
+
+			String[] l = line.split(",");
+			String id = l[1];
 
 			File f2 = new File(pathCommits + subPath + id + "/");
 			if (!f2.exists()) {
@@ -591,41 +518,43 @@ public class PullRequests {
 
 	}
 
-	public static void downloadIndividualPulls(String project, String url, String pathIds) {
+	public static void downloadIndividualPulls(String project, String url) {
 
 		String pathIndividual = Util.getIndividualPullsFolder(project);
-		List<String> ids = IO.readAnyFile(pathIds);
+		String path = Util.getPullsFolder(project);
+		List<String> ids = IO.readAnyFile(path + "pulls_ids.txt");
 		List<String> failedIds = new ArrayList<>();
 		List<String> sucessfullIds = new ArrayList<>();
 
-		for (String id : ids) {
+		try {
 
-			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "\"";
+			for (String line : ids) {
+				String[] l = line.split(",");
+				String id = "";
 
-			boolean f = JSONManager.getJSON(pathIndividual + id + ".json", command);
+				if (l.length == 1) {
+					id = l[0];
+				} else {
+					id = l[1];
+				}
 
-			if (f) {
-				failedIds.add(id);
+				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "\"";
+
+				boolean f = JSONManager.getJSON(pathIndividual + id + ".json", command);
+
+				if (f) {
+					failedIds.add(id);
+				}
+
 			}
 
+		} catch (Exception e) {
+			e.printStackTrace();
+			// TODO: handle exception
 		}
 
-		if (pathIds.contains("distinct")) {
-
-			for (String id : ids) {
-				boolean b = true;
-				for (String fId : failedIds) {
-					if (id.equals(fId)) {
-						b = false;
-					}
-				}
-				if (b) {
-					sucessfullIds.add(id);
-				}
-			}
-		}
-
+		System.out.println("Failed ids: " + failedIds.toString());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -663,34 +592,53 @@ public class PullRequests {
 			}
 
 			IO.writeAnyFile(path + "pulls_ids.txt", ids);
-			PullRequests.downloadIndividualPulls(project, url, path + "pulls_ids.txt");
+			PullRequests.downloadIndividualPulls(project, url);
 		} catch (Exception e) {
 			e.printStackTrace();// TODO: handle exception
 		}
 
 	}
 
-	public static void collectH1Hashs(String project) {
-		String pathAllHashs = LocalPaths.PATH_GIT + project + "/hashs.txt";
-		String pathHashsPulls = LocalPaths.PATH + project + "/pulls/commits/hashs_commits_not_merged.txt";
+	public static void getIdsFromPerilI(String project, String url) {
+		// Git.cloneProject(url);
+		// Git.generateHashs(project);
+		List<String> hashs = IO.readAnyFile(LocalPaths.PATH_GIT + project + "/hashs.txt");
+		List<String> pullsHashs = IO.readAnyFile(Util.getPullsFolder(project) + "pulls_info.txt");
+		List<String> perilI = new ArrayList<>();
+		List<String> perilIid = new ArrayList<>();
 
-		List<String> allHashs = IO.readAnyFile(pathAllHashs);
-		List<String> notMerged = IO.readAnyFile(pathHashsPulls);
-		List<String> should = new ArrayList<>();
-
-		for (String not : notMerged) {
-			String[] line = not.split(",");
-			String notHash = line[1];
-
-			for (String hash : allHashs) {
-				if (hash.contains(notHash)) {
-					should.add(hash);
+		for (String pullHashLine : pullsHashs) {
+			String[] pullHashL = pullHashLine.split(",");
+			String pullHash = pullHashL[2];
+			for (String h : hashs) {
+				if (pullHash.equals(h)) {
+					perilI.add(h);
+					perilIid.add(pullHashL[1]);
 				}
 			}
-
 		}
-		
-		IO.writeAnyFile(LocalPaths.PATH + project + "/pulls/h1_hashs.txt", should);
+
+		IO.writeAnyFile(Util.getPullsFolder(project) + "h1_hashs.txt", perilI);
+		IO.writeAnyFile(Util.getPullsFolder(project) + "h1_ids.txt", perilIid);
 
 	}
+
+	public static void getIdsFromPerilII(String project) {
+		List<String> pullsHashs = IO.readAnyFile(Util.getPullsFolder(project) + "pulls_info.txt");
+		List<String> h2Ids = IO.readAnyFile(Util.getPullsFolder(project) + "pull_requests_h2.txt");
+		List<String> perilII = new ArrayList<>();
+
+		for (String pullHashLine : pullsHashs) {
+			String[] pullHashL = pullHashLine.split(",");
+			String pullId = pullHashL[1];
+			for (String h : h2Ids) {
+				if (pullId.equals(h)) {
+					perilII.add(pullHashL[2]);
+				}
+			}
+		}
+
+		IO.writeAnyFile(Util.getPullsFolder(project) + "h2_hashs.txt", perilII);
+	}
+
 }
