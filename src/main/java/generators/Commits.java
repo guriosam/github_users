@@ -43,8 +43,8 @@ public class Commits {
 		}
 
 		boolean approach = true;
-		boolean heuristics = false;
-		boolean withPulls = false;
+		boolean heuristics = true;
+		boolean withPulls = true;
 
 		if (withPulls) {
 			if (heuristics) {
@@ -155,6 +155,8 @@ public class Commits {
 			List<Double> additions = new ArrayList<>();
 
 			List<Double> deletions = new ArrayList<>();
+			
+			List<Double> linesChanged = new ArrayList<>();
 
 			List<Integer> files = new ArrayList<>();
 
@@ -168,6 +170,8 @@ public class Commits {
 			// }
 			int insertion = 1;
 			List<String> countTests = new ArrayList<>();
+			double commitsWithTests = 0;
+			double c = 0;
 			for (CommitInfo cm : userPoint.getCommitInfo()) {
 
 				if (!approach) {
@@ -185,6 +189,7 @@ public class Commits {
 				}
 
 				HashMap<String, UserComment> userCount = Issues.readComments(project, user, authorDate);
+				HashMap<String, UserComment> userPullsCommentCount = PullRequests.readComments(project, user, authorDate);
 
 				if (userCommits.size() > 0) {
 
@@ -201,12 +206,12 @@ public class Commits {
 					maximumDate = maximumDate.substring(0, maximumDate.indexOf("T"));
 
 					readUserCommitInfo(project, gson, userCommits, minimumDate, maximumDate, dates, weeks, additions,
-							deletions, files, commitsPerDay, authorDate, usedHashs, usedHashsPulls, countTests, cs, nc,
+							deletions, linesChanged, files, commitsPerDay, authorDate, usedHashs, usedHashsPulls, countTests, cs, nc,
 							false);
 
 					if (pull) {
 						readUserCommitInfo(project, gson, userPullCommits, minimumDate, maximumDate, dates, weeks,
-								additions, deletions, files, commitsPerDay, authorDate, usedHashs, usedHashsPulls,
+								additions, deletions, linesChanged, files, commitsPerDay, authorDate, usedHashs, usedHashsPulls,
 								countTests, cs, nc, true);
 					}
 
@@ -216,6 +221,7 @@ public class Commits {
 
 					double adds = Util.getSumDouble(additions);
 					double rems = Util.getSumDouble(deletions);
+					double lines = adds + rems;
 					double file = (double) Util.getSumInt(files);
 
 					List<String> w = new ArrayList<>();
@@ -247,14 +253,15 @@ public class Commits {
 
 					userInfo.setMeanAdditions(additions);
 					userInfo.setMedianAdditions(additions);
+					userInfo.setMedianLinesChanged(additions);
 
 					userInfo.setDeletions(rems);
 					userInfo.setMeanDeletions(deletions);
 					userInfo.setMedianDeletions(deletions);
 
 					userInfo.setModifiedFiles(file);
-					userInfo.setMeanModified(files);
-					userInfo.setMedianModified(files);
+					userInfo.setMeanModifiedFiles(files);
+					userInfo.setMedianModifiedFiles(files);
 
 					userInfo.setEmptySizeCount(cs.getEmptyCount());
 					userInfo.setTinyCount(cs.getTinyCount());
@@ -271,17 +278,20 @@ public class Commits {
 
 					if (countTests.size() > 0) {
 						userInfo.setInsertionTests(true);
+						commitsWithTests++;
 					} else {
 						userInfo.setInsertionTests(false);
 					}
 					userInfo.setInsertionTestsCount(countTests.size());
-
+					c++;
 					if (userCommitsSize > 0) {
 						double percent = (double) insertion / userCommitsSize;
 						userInfo.setBuggyPercent(percent);
 					} else {
 						userInfo.setBuggyPercent(0.0);
 					}
+					
+					userInfo.setTestPresence((double) (commitsWithTests/c));
 
 					userInfo.setActiveDays(dates.size());
 
@@ -892,7 +902,7 @@ public class Commits {
 	@SuppressWarnings({ "unchecked", "rawtypes", "static-access" })
 	private static void readUserCommitInfo(String project, Gson gson, List<UserCommit> userCommits, String minimumDate,
 			String maximumDate, HashSet<String> dates, HashMap<Integer, Integer> weeks, List<Double> additions,
-			List<Double> deletions, List<Integer> files, HashMap<String, Integer> commitsPerDay, String authorDate,
+			List<Double> deletions, List<Double> linesChanged, List<Integer> files, HashMap<String, Integer> commitsPerDay, String authorDate,
 			List<String> usedHashs, List<String> usedHashsPulls, List<String> countTests, CommitSize cs,
 			NatureCommit nc, boolean pull) {
 		// TODO Auto-generated method stub
@@ -1036,16 +1046,21 @@ public class Commits {
 				if (commit.containsKey("stats")) {
 					LinkedTreeMap<String, Double> stats = (LinkedTreeMap<String, Double>) commit.get("stats");
 
+					double lineChanged = 0;
 					if (stats.containsKey("additions")) {
 						Double addition = stats.get("additions");
 						additions.add(addition);
+						lineChanged += addition;
 					}
 
 					if (stats.containsKey("deletions")) {
 						Double deletion = stats.get("deletions");
 						deletions.add(deletion);
+						lineChanged += deletion;
 					}
 
+					linesChanged.add(lineChanged);
+					
 					if (commit.containsKey("files")) {
 
 						List file = (ArrayList) commit.get("files");

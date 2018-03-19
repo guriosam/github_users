@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -13,7 +14,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 
 import endpoints.CommitsAPI;
+import endpoints.PullsAPI;
 import objects.CommitInfo;
+import objects.UserComment;
 import objects.UserCommit;
 import objects.UserInfo;
 import objects.UserPoint;
@@ -435,41 +438,6 @@ public class PullRequests {
 
 	}
 
-	public static void collectCommitsOnPullRequestsFromList(String project, String url, List<String> pullIds) {
-
-		String pathCommits = LocalPaths.PATH + project + "/pulls/commits/";
-		String subPath = "heuristic2/";
-
-		File f = new File(pathCommits);
-
-		if (!f.exists()) {
-			f.mkdirs();
-		}
-
-		for (String id : pullIds) {
-
-			File f1 = new File(pathCommits + subPath + id + "/");
-			if (!f1.exists()) {
-				f1.mkdirs();
-			}
-
-			for (int i = 1; i < 100; i++) {
-
-				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "/commits?page=" + i + "\"";
-
-				boolean empty = JSONManager.getJSON(pathCommits + subPath + id + "/" + i + ".json", command);
-
-				if (empty) {
-					break;
-				}
-
-			}
-
-		}
-
-	}
-
 	public static void collectCommitsOnPullRequests(String project, String url) {
 
 		String path = Util.getPullsFolder(project);
@@ -518,45 +486,6 @@ public class PullRequests {
 
 	}
 
-	public static void downloadIndividualPulls(String project, String url) {
-
-		String pathIndividual = Util.getIndividualPullsFolder(project);
-		String path = Util.getPullsFolder(project);
-		List<String> ids = IO.readAnyFile(path + "pulls_ids.txt");
-		List<String> failedIds = new ArrayList<>();
-		List<String> sucessfullIds = new ArrayList<>();
-
-		try {
-
-			for (String line : ids) {
-				String[] l = line.split(",");
-				String id = "";
-
-				if (l.length == 1) {
-					id = l[0];
-				} else {
-					id = l[1];
-				}
-
-				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "\"";
-
-				boolean f = JSONManager.getJSON(pathIndividual + id + ".json", command);
-
-				if (f) {
-					failedIds.add(id);
-				}
-
-			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			// TODO: handle exception
-		}
-
-		System.out.println("Failed ids: " + failedIds.toString());
-	}
-
 	@SuppressWarnings("unchecked")
 	public static void generateIndividualPullsCalls(String project, String url) {
 
@@ -592,7 +521,7 @@ public class PullRequests {
 			}
 
 			IO.writeAnyFile(path + "pulls_ids.txt", ids);
-			PullRequests.downloadIndividualPulls(project, url);
+			PullsAPI.downloadIndividualPulls(project, url);
 		} catch (Exception e) {
 			e.printStackTrace();// TODO: handle exception
 		}
@@ -639,6 +568,77 @@ public class PullRequests {
 		}
 
 		IO.writeAnyFile(Util.getPullsFolder(project) + "h2_hashs.txt", perilII);
+	}
+
+	public static HashMap<String, UserComment> readComments(String project, String userLogin, String authorDate) {
+
+		try {
+
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			String path = Util.getCommentsPullsFolder(project);
+			List<String> folders = IO.filesOnFolder(path);
+
+			HashMap<String, UserComment> userCount = new HashMap<String, UserComment>();
+
+			for (String folder : folders) {
+
+				String subPath = path + folder + "/";
+				List<String> files = IO.filesOnFolder(subPath);
+				Util.checkDirectory(subPath);
+
+				for (String file : files) {
+
+					String fileData = new String(Files.readAllBytes(Paths.get(subPath + file)));
+
+					try {
+						List<LinkedTreeMap> comments = gson.fromJson(fileData, List.class);
+
+						for (LinkedTreeMap<?, ?> comment : comments) {
+
+							LinkedTreeMap user = (LinkedTreeMap) comment.get("user");
+							String login = (String) user.get("login");
+
+							if (!login.equals(userLogin)) {
+								continue;
+							}
+
+							if (!userCount.containsKey(login)) {
+								userCount.put(login, new UserComment());
+							}
+							String created_at = (String) comment.get("created_at");
+
+							if (!authorDate.equals("")) {
+								if (!Util.checkPastDate(created_at, authorDate, "-")) {
+									continue;
+
+								}
+							}
+
+							UserComment count = userCount.get(login);
+							count.setCount(count.getCount() + 1);
+							count.setCreated_at(created_at);
+							userCount.replace(login, count);
+
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+						System.out.println(subPath + file);
+						// TODO: handle exception
+					}
+
+				}
+
+			}
+
+			return userCount;
+
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+
+		return new HashMap<>();
+
 	}
 
 }

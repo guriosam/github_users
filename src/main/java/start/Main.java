@@ -5,6 +5,7 @@ import java.util.List;
 
 import endpoints.CommitsAPI;
 import endpoints.IssuesAPI;
+import endpoints.PullsAPI;
 import generators.Commits;
 import generators.Issues;
 import generators.PullRequests;
@@ -20,20 +21,20 @@ public class Main {
 
 		projects.add("elasticsearch");
 		urls.add("elastic/elasticsearch");
-		//projects.add("spring-boot");
-		//urls.add("spring-projects/spring-boot");
-		//projects.add("netty");
-		//urls.add("netty/netty");
-		//projects.add("bazel");
-		//urls.add("bazelbuild/bazel");
-		//projects.add("presto");
-		//urls.add("prestodb/presto");
-		//projects.add("Signal-Android");
-		//urls.add("signalapp/Signal-Android");
-		//projects.add("okhttp");
-		//urls.add("square/okhttp");
+		projects.add("spring-boot");
+		urls.add("spring-projects/spring-boot");
+		projects.add("netty");
+		urls.add("netty/netty");
+		projects.add("bazel");
+		urls.add("bazelbuild/bazel");
+		projects.add("presto");
+		urls.add("prestodb/presto");
+		projects.add("Signal-Android");
+		urls.add("signalapp/Signal-Android");
+		projects.add("okhttp");
+		urls.add("square/okhttp");
 		
-		/*
+		
 		projects.add("elasticsearch-hadoop");
 		urls.add("elastic/elasticsearch-hadoop");
 		projects.add("HikariCP");
@@ -54,7 +55,7 @@ public class Main {
 		urls.add("facebook/fresco");
 		projects.add("RxJava");
 		urls.add("ReactiveX/RxJava");
-		 */
+		 
 		int total = 0;
 
 		for (int i = 0; i < projects.size(); i++) {
@@ -71,11 +72,11 @@ public class Main {
 
 			// System.out.println("********** " + project.toUpperCase() + "
 			// *********");
-
-			CommitsAPI.downloadGroupOfCommitsByAuthor(project, url);
-			CommitsAPI.downloadUserCommitsFromMaster(project, url);
 			
-			// ISSUES
+			//CommitsAPI.downloadGroupOfCommitsByAuthor(project, url);
+			//CommitsAPI.downloadUserCommitsFromMaster(project, url);
+			
+			/*// ISSUES
 			System.out.println("Generating Repository Issues Call");
 			IssuesAPI.generateRepositoryIssuesCall(project, url);
 			System.out.println("Generating Issues ID");
@@ -86,27 +87,32 @@ public class Main {
 			Issues.readIssues(project);
 			System.out.println("Filtering Issues by Users");
 			Issues.filterIssuesByUser(project);
+			*/
 			
 			
 			// COMMENTS
-			System.out.println("Generating Comments Calls");
-			Issues.generateCommentsCalls(project, url);
+			//System.out.println("Generating Comments Calls");
+			//Issues.generateCommentsCalls(project, url);
 		
 			// PULL REQUESTS
 
 			 Issues.generatePullsCalls(project, url);
 			 PullRequests.generateIndividualPullsCalls(project, url);
 			 
-			// System.out.println("Collecting Not Merged Pulls");
+			System.out.println("Collecting Not Merged Pulls");
 			PullRequests.generatePullsIds(project);
 			 
-			// System.out.println("Downloading Commits of Pulls");
+			System.out.println("Downloading Commits of Pulls");
 			PullRequests.collectCommitsOnPullRequests(project, url);
 
-			// System.out.println("Collecting Pull Commits Hashs");
+			System.out.println("Collecting Pull Commits Hashs");
 			PullRequests.collectPullCommitsHashs(project);
 			
 			PullRequests.collectPullCommitsByUser(project, url);
+		
+			System.out.println("Collecting Pull Comments");
+			
+			PullsAPI.downloadCommentsInReviews(project, url);
 			// System.out.println("Comparing Hashs");
 			/*
 			 * TODO
@@ -114,8 +120,8 @@ public class Main {
 			
 			*/
 			
-			PullRequests.getIdsFromPerilI(project, url);
-			PullRequests.getIdsFromPerilII(project);
+		//	PullRequests.getIdsFromPerilI(project, url);
+		//	PullRequests.getIdsFromPerilII(project);
 			
 			//Issues.readPullRequests(project);
 
@@ -124,11 +130,11 @@ public class Main {
 				PullRequests.collectPullCommitsByUser(project, url);
 			 */
 			// FINAL DATA
-			// System.out.println("Analyzing all info");
+			 System.out.println("Analyzing all info");
 
-			Commits.collectHashsFromUsers(project);
+			//Commits.collectHashsFromUsers(project);
 			List<UserPoint> userPoints = Users.organizePoints(project);
-			Commits.analyzeCommits(project, userPoints);
+			//Commits.analyzeCommits(project, userPoints);
 
 			//PullRequests.analysePulls(project, userPoints);
 

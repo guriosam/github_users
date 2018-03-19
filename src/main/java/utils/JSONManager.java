@@ -14,9 +14,11 @@ public class JSONManager {
 	public static boolean getJSON(String path, String command) {
 
 		File file = new File(path);
-		
-		if (file.exists()) {
-			return false;
+
+		if (!path.contains("general") && !path.contains("pull")) {
+			if (file.exists()) {
+				return false;
+			}
 		}
 
 		try {
@@ -28,7 +30,7 @@ public class JSONManager {
 			while (wait) {
 
 				Process p = Runtime.getRuntime().exec(command);
-				
+
 				BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
 				String a = null;
@@ -36,14 +38,13 @@ public class JSONManager {
 				boolean read = false;
 
 				while ((a = input.readLine()) != null) {
-					
 
 					if (read) {
 
-						if(a.equals("")){
+						if (a.equals("")) {
 							continue;
 						}
-						
+
 						if (a.contains("https://developer.github.com/v3/#pagination")) {
 							return true;
 						}
@@ -54,8 +55,8 @@ public class JSONManager {
 					if (a.contains("X-GitHub-Request-Id")) {
 						read = true;
 					}
-					
-					if(a.contains("400 Bad Request")){
+
+					if (a.contains("400 Bad Request")) {
 						return true;
 					}
 
@@ -67,13 +68,13 @@ public class JSONManager {
 								if (a.contains("500")) {
 									return true;
 								}
-								
-								if(a.contains("404")){
+
+								if (a.contains("404")) {
 									return true;
 								}
 
 								System.out.println(a);
-								
+
 								wait = true;
 							}
 						}
@@ -105,11 +106,11 @@ public class JSONManager {
 				if (wait) {
 
 					Calendar calendar = Calendar.getInstance();
-					
-					if(t.equals("")){
+
+					if (t.equals("")) {
 						return false;
 					}
-					
+
 					calendar.setTimeInMillis(Long.valueOf(t) * 1000);
 
 					SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss dd MM yyyy");
@@ -128,7 +129,7 @@ public class JSONManager {
 					while (current <= time) {
 						current = System.currentTimeMillis();
 					}
-					
+
 					System.out.println("Restarting...");
 					wait = false;
 				} else {

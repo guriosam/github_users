@@ -228,6 +228,12 @@ public class Util {
 		return path;
 	}
 
+	public static String getCommentsPullsFolder(String project){
+		String path = getPullsFolder(project) + "comments/";
+		checkDirectory(path);
+		return path;
+	}
+	
 	public static String getForkFolderPath(String project) {
 		String path = LocalPaths.PATH + project + "/forks/";
 		checkDirectory(path);

@@ -25,8 +25,9 @@ public class UserInfo {
 	private double meanDeletions;
 	private double medianDeletions;
 	private double modifiedFiles;
-	private double meanModified;
-	private double medianModified;
+	private double meanModifiedFiles;
+	private double medianModifiedFiles;
+	private double medianLinesChanged;
 	private double buggyPercent;
 	private int emptyNatureCount;
 	private int managementCount;
@@ -57,6 +58,8 @@ public class UserInfo {
 	private boolean insertionTests;
 	private int insertionTestsCount;
 	private int insertionPoints;
+	private double testPresence;
+
 
 	public int getCommits() {
 		return commits;
@@ -157,18 +160,18 @@ public class UserInfo {
 		this.modifiedFiles = modifiedFiles;
 	}
 
-	public double getMeanModified() {
-		return meanModified;
+	public double getMeanModifiedFiles() {
+		return meanModifiedFiles;
 	}
 
-	public void setMeanModified(List<Integer> files) {
+	public void setMeanModifiedFiles(List<Integer> files) {
 
 		Util.sortList(files);
 
 		if (files.size() > 0) {
-			meanModified = (double) this.modifiedFiles / files.size();
+			meanModifiedFiles = (double) this.modifiedFiles / files.size();
 		} else {
-			meanModified = 0.0;
+			meanModifiedFiles = 0.0;
 		}
 
 	}
@@ -263,17 +266,17 @@ public class UserInfo {
 	}
 
 	public double getMedianModified() {
-		return medianModified;
+		return medianModifiedFiles;
 	}
 
-	public void setMedianModified(List<Integer> files) {
+	public void setMedianModifiedFiles(List<Integer> files) {
 		Util.sortList(files);
 
 		if (files.size() > 0) {
 			if (files.size() % 2 == 0) {
-				this.medianModified = ((files.get(files.size() / 2) + files.get(files.size() / 2 - 1)) / 2);
+				this.medianModifiedFiles = ((files.get(files.size() / 2) + files.get(files.size() / 2 - 1)) / 2);
 			} else {
-				this.medianModified = (files.get(files.size() / 2));
+				this.medianModifiedFiles = (files.get(files.size() / 2));
 			}
 		}
 	}
@@ -450,12 +453,12 @@ public class UserInfo {
 		this.medianDeletions = medianDeletions;
 	}
 
-	public void setMeanModified(double meanModified) {
-		this.meanModified = meanModified;
+	public void setMeanModifiedFiles(double meanModifiedFiles) {
+		this.meanModifiedFiles = meanModifiedFiles;
 	}
 
-	public void setMedianModified(double medianModified) {
-		this.medianModified = medianModified;
+	public void setMedianModifiedFiles(double medianModifiedFiles) {
+		this.medianModifiedFiles = medianModifiedFiles;
 	}
 
 	public void setTimeOnProject(int timeOnProject) {
@@ -508,6 +511,28 @@ public class UserInfo {
 
 	public void setBuggy(boolean buggy) {
 		this.buggy = buggy;
+	}
+
+	public void setMedianLinesChanged(List<Double> linesChanged) {
+		Util.sortList(linesChanged);
+
+		if (linesChanged.size() > 0) {
+			if (linesChanged.size() % 2 == 0) {
+				this.medianLinesChanged = ((linesChanged.get(linesChanged.size() / 2) + linesChanged.get(linesChanged.size() / 2 - 1))
+						/ 2);
+			} else {
+				this.medianLinesChanged = (linesChanged.get(linesChanged.size() / 2));
+			}
+		}
+		
+	}
+
+	public void setTestPresence(double testPresence) {
+		this.testPresence = testPresence;
+	}
+	
+	public double getTestPresence(){
+		return this.testPresence;
 	}
 
 }
