@@ -11,11 +11,11 @@ import com.google.gson.GsonBuilder;
 
 public class JSONManager {
 
-	public static boolean getJSON(String path, String command) {
+	public static boolean getJSON(String path, String command, boolean replace) {
 
 		File file = new File(path);
 
-		if (!path.contains("general") && !path.contains("pull")) {
+		if (!replace) {
 			if (file.exists()) {
 				return false;
 			}

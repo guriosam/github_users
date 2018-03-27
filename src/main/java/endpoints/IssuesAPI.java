@@ -16,7 +16,7 @@ public class IssuesAPI {
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 					+ " \"https://api.github.com/repos/" + url + "/issues?state=all&page=" + i + "\"";
 
-			boolean empty = JSONManager.getJSON(path + i + ".json", command);
+			boolean empty = JSONManager.getJSON(path + i + ".json", command, false);
 
 			if (empty) {
 				break;

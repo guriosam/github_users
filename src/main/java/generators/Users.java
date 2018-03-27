@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -16,7 +17,6 @@ import objects.UserPoint;
 import objects.UserProfile;
 import utils.Config;
 import utils.IO;
-import utils.JSONManager;
 import utils.LocalPaths;
 import utils.Util;
 
@@ -171,12 +171,20 @@ public class Users {
 		HashMap<String, List<CommitInfo>> userPoint = new HashMap<>();
 		List<UserPoint> userPoints = new ArrayList<>();
 
+		HashSet<String> hashs = new HashSet<>();
+
 		for (String line : users) {
 
 			String[] l = line.split(",");
 
 			String hash = l[0];
 			hash = hash.replace("\"", "");
+
+			if (hashs.contains(hash)) {
+				continue;
+			}
+
+			hashs.add(hash);
 
 			String user = l[1];
 			user = user.replace("\"", "");
@@ -214,6 +222,12 @@ public class Users {
 			String user = l[0];
 			String date = l[2];
 
+			if (hashs.contains(hash)) {
+				continue;
+			}
+
+			hashs.add(hash);
+
 			CommitInfo commit = new CommitInfo();
 			commit.setHash(hash);
 			commit.setDate(date);
@@ -231,6 +245,8 @@ public class Users {
 		for (String k : userPoint.keySet()) {
 
 			List<CommitInfo> info = userPoint.get(k);
+
+			HashSet<String> cHashs = new HashSet<>();
 
 			for (int i = 0; i < info.size() - 1; i++) {
 				for (int j = i + 1; j < info.size(); j++) {

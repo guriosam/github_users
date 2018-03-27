@@ -4,11 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import endpoints.CommitsAPI;
-import endpoints.IssuesAPI;
 import endpoints.PullsAPI;
 import generators.Commits;
-import generators.Issues;
-import generators.PullRequests;
 import generators.Users;
 import objects.UserPoint;
 
@@ -19,42 +16,48 @@ public class Main {
 		List<String> projects = new ArrayList<>();
 		List<String> urls = new ArrayList<>();
 
-		projects.add("elasticsearch");
-		urls.add("elastic/elasticsearch");
-		projects.add("spring-boot");
-		urls.add("spring-projects/spring-boot");
-		projects.add("netty");
-		urls.add("netty/netty");
-		projects.add("bazel");
-		urls.add("bazelbuild/bazel");
-		projects.add("presto");
-		urls.add("prestodb/presto");
-		projects.add("Signal-Android");
-		urls.add("signalapp/Signal-Android");
-		projects.add("okhttp");
-		urls.add("square/okhttp");
+//		projects.add("elasticsearch");
+//		urls.add("elastic/elasticsearch");
+//		projects.add("spring-boot");
+//		urls.add("spring-projects/spring-boot");
+//		projects.add("netty");
+//		urls.add("netty/netty");
+//		projects.add("bazel");
+//		urls.add("bazelbuild/bazel");
+//		projects.add("presto");
+//		urls.add("prestodb/presto");
+//		projects.add("Signal-Android");
+//		urls.add("signalapp/Signal-Android");
+//		projects.add("okhttp");
+//		urls.add("square/okhttp");
 		
 		
-		projects.add("elasticsearch-hadoop");
-		urls.add("elastic/elasticsearch-hadoop");
-		projects.add("HikariCP");
-		urls.add("brettwooldridge/HikariCP");
-		projects.add("ExoPlayer");
-		urls.add("google/ExoPlayer");
-		projects.add("MaterialDrawer");
-		urls.add("mikepenz/MaterialDrawer");
-		projects.add("Hystrix");
-		urls.add("Netflix/Hystrix");
-		projects.add("material-dialogs");
-		urls.add("afollestad/material-dialogs");
+		//projects.add("elasticsearch-hadoop");
+		//urls.add("elastic/elasticsearch-hadoop");
+		//projects.add("HikariCP");
+		//urls.add("brettwooldridge/HikariCP");
+		//projects.add("ExoPlayer");
+		//urls.add("google/ExoPlayer");
+		//projects.add("MaterialDrawer");
+		//urls.add("mikepenz/MaterialDrawer");
+		
+		//projects.add("Hystrix");
+		//urls.add("Netflix/Hystrix");
+		
+		//projects.add("material-dialogs");
+		//urls.add("afollestad/material-dialogs");
+		
 		projects.add("guava");
 		urls.add("google/guava");
-		projects.add("glide");
-		urls.add("bumptech/glide");
-		projects.add("fresco");
-		urls.add("facebook/fresco");
-		projects.add("RxJava");
-		urls.add("ReactiveX/RxJava");
+		
+		
+		//projects.add("glide");
+		//urls.add("bumptech/glide");
+		//projects.add("fresco");
+		//urls.add("facebook/fresco");
+		
+		//projects.add("RxJava");
+		//urls.add("ReactiveX/RxJava");
 		 
 		int total = 0;
 
@@ -73,7 +76,7 @@ public class Main {
 			// System.out.println("********** " + project.toUpperCase() + "
 			// *********");
 			
-			//CommitsAPI.downloadGroupOfCommitsByAuthor(project, url);
+			CommitsAPI.downloadGroupOfCommitsByAuthor(project, url);
 			//CommitsAPI.downloadUserCommitsFromMaster(project, url);
 			
 			/*// ISSUES
@@ -93,26 +96,28 @@ public class Main {
 			// COMMENTS
 			//System.out.println("Generating Comments Calls");
 			//Issues.generateCommentsCalls(project, url);
+			//CommentsAPI.downloadGroupOfCommitComments(project, url);
+			//Comments.generateCommentsIds(project);
+			//CommentsAPI.downloadIndividualCommitComments(project, url);
 		
 			// PULL REQUESTS
 
-			 Issues.generatePullsCalls(project, url);
-			 PullRequests.generateIndividualPullsCalls(project, url);
+//			 Issues.generatePullsCalls(project, url);
+//			 PullRequests.generateIndividualPullsCalls(project, url);
 			 
-			System.out.println("Collecting Not Merged Pulls");
-			PullRequests.generatePullsIds(project);
+//			PullRequests.generatePullsIds(project);
 			 
-			System.out.println("Downloading Commits of Pulls");
-			PullRequests.collectCommitsOnPullRequests(project, url);
+			//System.out.println("Downloading Commits of Pulls");
+		//	PullRequests.collectCommitsOnPullRequests(project, url);
 
-			System.out.println("Collecting Pull Commits Hashs");
-			PullRequests.collectPullCommitsHashs(project);
+		//	System.out.println("Collecting Pull Commits Hashs");
+		//	PullRequests.collectPullCommitsHashs(project);
 			
-			PullRequests.collectPullCommitsByUser(project, url);
+		//	PullRequests.collectPullCommitsByUser(project, url);
 		
-			System.out.println("Collecting Pull Comments");
+		//	System.out.println("Collecting Pull Comments");
 			
-			PullsAPI.downloadCommentsInReviews(project, url);
+		PullsAPI.downloadCommentsInReviews(project, url);
 			// System.out.println("Comparing Hashs");
 			/*
 			 * TODO
@@ -134,7 +139,8 @@ public class Main {
 
 			//Commits.collectHashsFromUsers(project);
 			List<UserPoint> userPoints = Users.organizePoints(project);
-			//Commits.analyzeCommits(project, userPoints);
+			
+			Commits.analyzeCommits(project, userPoints);
 
 			//PullRequests.analysePulls(project, userPoints);
 

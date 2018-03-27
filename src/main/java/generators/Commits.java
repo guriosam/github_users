@@ -58,7 +58,7 @@ public class Commits {
 
 		List<UserInfo> jsonUsers = new ArrayList<>();
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		
+
 		List<UserPullRequest> userPull = Issues.getPullRequests(project);
 
 		List<UserIssue> userIssues = Issues.readIssues(project);
@@ -78,9 +78,6 @@ public class Commits {
 			if (user.equals("NA")) {
 				continue;
 			}
-
-			System.out.println(user);
-
 			String lastDate = "";
 
 			if (approach) {
@@ -90,6 +87,7 @@ public class Commits {
 			List<UserCommit> userCommits = readAllCommitsOnFolder(project,
 					LocalPaths.PATH + project + "/users/" + user + "/commits/",
 					LocalPaths.PATH + project + "/users/" + user + "/commits/", user, lastDate, heuristics);
+
 
 			for (int i = 0; i < userCommits.size() - 1; i++) {
 				for (int j = i + 1; j < userCommits.size(); j++) {
@@ -155,8 +153,22 @@ public class Commits {
 			List<Double> additions = new ArrayList<>();
 
 			List<Double> deletions = new ArrayList<>();
-			
+
 			List<Double> linesChanged = new ArrayList<>();
+
+			// Nature
+			double emptyNatureTotal = 0;
+			double managementTotal = 0;
+			double reengineeringTotal = 0;
+			double correctiveEngineeringTotal = 0;
+			double forwardEngineeringTotal = 0;
+			double uncategorizedTotal = 0;
+
+			double emptySizeTotal = 0;
+			double tinyTotal = 0;
+			double smallTotal = 0;
+			double mediumTotal = 0;
+			double largeTotal = 0;
 
 			List<Integer> files = new ArrayList<>();
 
@@ -174,6 +186,7 @@ public class Commits {
 			double c = 0;
 			for (CommitInfo cm : userPoint.getCommitInfo()) {
 
+
 				if (!approach) {
 					cm = userPoint.getCommitInfo().get(userPoint.getCommitInfo().size() - 1);
 				}
@@ -189,11 +202,19 @@ public class Commits {
 				}
 
 				HashMap<String, UserComment> userCount = Issues.readComments(project, user, authorDate);
-				HashMap<String, UserComment> userPullsCommentCount = PullRequests.readComments(project, user, authorDate);
+				HashMap<String, UserComment> userPullsCommentCount = PullRequests.readComments(project, user,
+						authorDate);
+				HashMap<String, UserComment> userCommitCommentCount = Comments.readCommitComments(project, user,
+						authorDate);
 
-				if (userCommits.size() > 0) {
+				if (userCommits.size() > 0 || userPullCommits.size() > 0) {
 
-					String minimumDate = userCommits.get(0).getDate();
+					String minimumDate = "";
+					if (userCommits.size() > 0) {
+						minimumDate = userCommits.get(0).getDate();
+					} else {
+						minimumDate = userPullCommits.get(0).getDate();
+					}
 					minimumDate = minimumDate.substring(0, minimumDate.indexOf("T"));
 					String maximumDate = DateTime.now(DateTimeZone.UTC).toString();
 					if (approach) {
@@ -206,13 +227,13 @@ public class Commits {
 					maximumDate = maximumDate.substring(0, maximumDate.indexOf("T"));
 
 					readUserCommitInfo(project, gson, userCommits, minimumDate, maximumDate, dates, weeks, additions,
-							deletions, linesChanged, files, commitsPerDay, authorDate, usedHashs, usedHashsPulls, countTests, cs, nc,
-							false);
+							deletions, linesChanged, files, commitsPerDay, authorDate, usedHashs, usedHashsPulls,
+							countTests, cs, nc, false);
 
 					if (pull) {
 						readUserCommitInfo(project, gson, userPullCommits, minimumDate, maximumDate, dates, weeks,
-								additions, deletions, linesChanged, files, commitsPerDay, authorDate, usedHashs, usedHashsPulls,
-								countTests, cs, nc, true);
+								additions, deletions, linesChanged, files, commitsPerDay, authorDate, usedHashs,
+								usedHashsPulls, countTests, cs, nc, true);
 					}
 
 					List<Date> commitDates = Util.orderDates(commitsPerDay);
@@ -220,6 +241,7 @@ public class Commits {
 					List<Integer> orderedDates = Util.iterateDates(commitsPerDay, commitDates);
 
 					double adds = Util.getSumDouble(additions);
+					double lchanged = Util.getSumDouble(linesChanged);
 					double rems = Util.getSumDouble(deletions);
 					double lines = adds + rems;
 					double file = (double) Util.getSumInt(files);
@@ -233,14 +255,15 @@ public class Commits {
 					UserInfo userInfo = new UserInfo();
 					int userCommitsSize = 0;
 
-					if (approach) {
-						userCommitsSize = usedHashs.size() + usedHashsPulls.size();
-						userInfo.setCommitsPulls(usedHashsPulls.size());
-						userInfo.setHash(hash);
-					} else {
-						userCommitsSize = userCommits.size() + userPullCommits.size();
-						userInfo.setCommitsPulls(userPullCommits.size());
-					}
+					// if (approach) {
+					userCommitsSize = usedHashs.size() + usedHashsPulls.size();
+					userInfo.setCommitsPulls(usedHashsPulls.size());
+					userInfo.setHash(hash);
+					// } else {
+					// userCommitsSize = userCommits.size() +
+					// userPullCommits.size();
+					// userInfo.setCommitsPulls(userPullCommits.size());
+					// }
 
 					userInfo.setBuggy(cm.isBuggy());
 
@@ -250,10 +273,12 @@ public class Commits {
 					userInfo.setMedianCommits(orderedDates);
 
 					userInfo.setAdditions(adds);
-
 					userInfo.setMeanAdditions(additions);
 					userInfo.setMedianAdditions(additions);
-					userInfo.setMedianLinesChanged(additions);
+
+					userInfo.setLinesChanged(lchanged);
+					userInfo.setMeanLinesChanged(linesChanged);
+					userInfo.setMedianLinesChanged(linesChanged);
 
 					userInfo.setDeletions(rems);
 					userInfo.setMeanDeletions(deletions);
@@ -263,18 +288,55 @@ public class Commits {
 					userInfo.setMeanModifiedFiles(files);
 					userInfo.setMedianModifiedFiles(files);
 
-					userInfo.setEmptySizeCount(cs.getEmptyCount());
-					userInfo.setTinyCount(cs.getTinyCount());
-					userInfo.setSmallCount(cs.getSmallCount());
-					userInfo.setMediumCount(cs.getMediumCount());
-					userInfo.setLargeCount(cs.getLargeCount());
+					emptySizeTotal += cs.getEmptyCount();
+					userInfo.setEmptySizeCount((int) emptySizeTotal);
+					tinyTotal += cs.getTinyCount();
+					userInfo.setTinyCount((int) tinyTotal);
+					smallTotal += cs.getSmallCount();
+					userInfo.setSmallCount((int) smallTotal);
+					mediumTotal += cs.getMediumCount();
+					userInfo.setMediumCount((int) mediumTotal);
+					largeTotal += cs.getLargeCount();
+					userInfo.setLargeCount((int) largeTotal);
 
-					userInfo.setEmptyNatureCount(nc.getEmptyCount());
-					userInfo.setForwardEngineeringCount(nc.getForwardEngineeringCount());
-					userInfo.setCorrectiveEngineeringCount(nc.getCorrectiveEngineeringCount());
-					userInfo.setReengineeringCount(nc.getReengineeringCount());
-					userInfo.setUncategorizedCount(nc.getUncategorizedCount());
-					userInfo.setManagementCount(nc.getManagementCount());
+					double totalSize = emptySizeTotal + tinyTotal + smallTotal + mediumTotal + largeTotal;
+
+					if(totalSize == 0){
+						totalSize = 1;
+					}
+					
+					userInfo.setEmptySizePercent(emptySizeTotal / totalSize);
+					userInfo.setTinyPercent(tinyTotal / totalSize);
+					userInfo.setSmallPercent(smallTotal / totalSize);
+					userInfo.setMediumPercent(mediumTotal / totalSize);
+					userInfo.setLargePercent(largeTotal / totalSize);
+
+					emptyNatureTotal += nc.getEmptyCount();
+					userInfo.setEmptyNatureCount((int) emptyNatureTotal);
+					forwardEngineeringTotal += nc.getForwardEngineeringCount();
+					userInfo.setForwardEngineeringCount((int) forwardEngineeringTotal);
+					correctiveEngineeringTotal += nc.getCorrectiveEngineeringCount();
+					userInfo.setCorrectiveEngineeringCount((int) correctiveEngineeringTotal);
+					reengineeringTotal += nc.getReengineeringCount();
+					userInfo.setReengineeringCount((int) reengineeringTotal);
+					uncategorizedTotal += nc.getUncategorizedCount();
+					userInfo.setUncategorizedCount((int) uncategorizedTotal);
+					managementTotal += nc.getManagementCount();
+					userInfo.setManagementCount((int) managementTotal);
+
+					double totalNature = emptyNatureTotal + forwardEngineeringTotal + correctiveEngineeringTotal
+							+ reengineeringTotal + uncategorizedTotal + managementTotal;
+					
+					if(totalNature == 0){
+						totalNature = 1;
+					}
+
+					userInfo.setEmptyNaturePercent(emptyNatureTotal / totalNature);
+					userInfo.setForwardEngineeringPercent(forwardEngineeringTotal / totalNature);
+					userInfo.setCorrectiveEngineeringPercent(correctiveEngineeringTotal / totalNature);
+					userInfo.setReengineeringPercent(reengineeringTotal / totalNature);
+					userInfo.setUncategorizedPercent(uncategorizedTotal / totalNature);
+					userInfo.setManagementPercent(managementTotal / totalNature);
 
 					if (countTests.size() > 0) {
 						userInfo.setInsertionTests(true);
@@ -290,8 +352,8 @@ public class Commits {
 					} else {
 						userInfo.setBuggyPercent(0.0);
 					}
-					
-					userInfo.setTestPresence((double) (commitsWithTests/c));
+
+					userInfo.setTestPresence((double) (commitsWithTests / c));
 
 					userInfo.setActiveDays(dates.size());
 
@@ -394,12 +456,38 @@ public class Commits {
 					if (userCount.containsKey(user)) {
 						if (approach) {
 							if (Util.checkPastDate(userCount.get(user).getCreated_at(), authorDate, "-")) {
-								userInfo.setNumberComments(userCount.get(user).getCount());
+								userInfo.setNumberIssueComments(userCount.get(user).getCount());
 							} else {
-								userInfo.setNumberComments(0);
+								userInfo.setNumberIssueComments(0);
 							}
 						} else {
-							userInfo.setNumberComments(userCount.get(user).getCount());
+							userInfo.setNumberIssueComments(userCount.get(user).getCount());
+						}
+
+					}
+
+					if (userPullsCommentCount.containsKey(user)) {
+						if (approach) {
+							if (Util.checkPastDate(userPullsCommentCount.get(user).getCreated_at(), authorDate, "-")) {
+								userInfo.setNumberPullComments(userPullsCommentCount.get(user).getCount());
+							} else {
+								userInfo.setNumberPullComments(0);
+							}
+						} else {
+							userInfo.setNumberPullComments(userPullsCommentCount.get(user).getCount());
+						}
+
+					}
+
+					if (userCommitCommentCount.containsKey(user)) {
+						if (approach) {
+							if (Util.checkPastDate(userCommitCommentCount.get(user).getCreated_at(), authorDate, "-")) {
+								userInfo.setNumberCommitComments(userCommitCommentCount.get(user).getCount());
+							} else {
+								userInfo.setNumberCommitComments(0);
+							}
+						} else {
+							userInfo.setNumberCommitComments(userCommitCommentCount.get(user).getCount());
 						}
 
 					}
@@ -438,6 +526,8 @@ public class Commits {
 						jsonUsers.add(userInfo);
 					}
 
+				} else {
+					System.out.println("Zero commits: " + userCommits.size());
 				}
 				if (approach) {
 					insertion++;
@@ -633,9 +723,10 @@ public class Commits {
 				}
 
 				try {
+
 					LinkedTreeMap c = gson.fromJson(fileData, LinkedTreeMap.class);
 
-					readSingleCommit(userCommits, c, user, authorDate, heuristics);
+					userCommits = readSingleCommit(userCommits, c, user, authorDate, heuristics);
 
 					String output = gson.toJson(userCommits);
 
@@ -647,26 +738,17 @@ public class Commits {
 
 			}
 
-			List<UserCommit> uc2 = new ArrayList<>();
+			// List<UserCommit> uc2 = new ArrayList<>();
 
-			if (!pulls) {
-				for (UserCommit u : userCommits) {
-					boolean a = false;
-					for (String h : userCommits2) {
-						if (u.getSha().equals(h)) {
-							a = true;
-						}
-					}
-
-					if (a) {
-						uc2.add(u);
-					}
-				}
-
-				for (UserCommit uc : uc2) {
-					userCommits.remove(uc);
-				}
-			}
+			/*
+			 * if (!pulls) { for (UserCommit u : userCommits) { boolean a =
+			 * false; for (String h : userCommits2) { if (u.getSha().equals(h))
+			 * { a = true; } }
+			 * 
+			 * if (a) { uc2.add(u); } }
+			 * 
+			 * for (UserCommit uc : uc2) { userCommits.remove(uc); } }
+			 */
 
 			return userCommits;
 
@@ -674,14 +756,13 @@ public class Commits {
 			// TODO: handle exception
 			e.printStackTrace();
 		}
-
 		return new ArrayList<>();
 
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static void readSingleCommit(List<UserCommit> userCommits, LinkedTreeMap c, String user, String authorDate,
-			boolean heuristics) {
+	public static List<UserCommit> readSingleCommit(List<UserCommit> userCommits, LinkedTreeMap c, String user,
+			String authorDate, boolean heuristics) {
 
 		UserCommit uc = new UserCommit();
 
@@ -780,12 +861,12 @@ public class Commits {
 				}
 
 				if (login.equals("")) {
-					return;
+					return userCommits;
 				}
 
 				if (!user.equals("")) {
 					if (!user.equals(login)) {
-						return;
+						return userCommits;
 					}
 				}
 
@@ -799,7 +880,7 @@ public class Commits {
 
 					if (!authorDate.equals("")) {
 						if (!Util.checkPastDate(date, authorDate, "-")) {
-							return;
+							return userCommits;
 						}
 					}
 				}
@@ -894,17 +975,18 @@ public class Commits {
 				userCommits.add(uc);
 
 			}
-
 		}
+
+		return userCommits;
 
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes", "static-access" })
 	private static void readUserCommitInfo(String project, Gson gson, List<UserCommit> userCommits, String minimumDate,
 			String maximumDate, HashSet<String> dates, HashMap<Integer, Integer> weeks, List<Double> additions,
-			List<Double> deletions, List<Double> linesChanged, List<Integer> files, HashMap<String, Integer> commitsPerDay, String authorDate,
-			List<String> usedHashs, List<String> usedHashsPulls, List<String> countTests, CommitSize cs,
-			NatureCommit nc, boolean pull) {
+			List<Double> deletions, List<Double> linesChanged, List<Integer> files,
+			HashMap<String, Integer> commitsPerDay, String authorDate, List<String> usedHashs,
+			List<String> usedHashsPulls, List<String> countTests, CommitSize cs, NatureCommit nc, boolean pull) {
 		// TODO Auto-generated method stub
 
 		int empty = 0;
@@ -1060,7 +1142,7 @@ public class Commits {
 					}
 
 					linesChanged.add(lineChanged);
-					
+
 					if (commit.containsKey("files")) {
 
 						List file = (ArrayList) commit.get("files");

@@ -35,7 +35,7 @@ public class PullsAPI {
 				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "/commits?page=" + i + "\"";
 
-				boolean empty = JSONManager.getJSON(pathCommits + subPath + id + "/" + i + ".json", command);
+				boolean empty = JSONManager.getJSON(pathCommits + subPath + id + "/" + i + ".json", command, false);
 
 				if (empty) {
 					break;
@@ -70,7 +70,7 @@ public class PullsAPI {
 				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "\"";
 
-				boolean f = JSONManager.getJSON(pathIndividual + id + ".json", command);
+				boolean f = JSONManager.getJSON(pathIndividual + id + ".json", command, false);
 
 				if (f) {
 					failedIds.add(id);
@@ -87,6 +87,8 @@ public class PullsAPI {
 	}
 
 	public static void downloadCommentsInReviews(String project, String url) {
+		
+		System.out.println("Download Comments in Reviews");
 
 		String pathPullsComments = Util.getCommentsPullsFolder(project);
 		List<String> pullsIds = IO.readAnyFile(Util.getPullsFolder(project) + "pulls_ids.txt");
@@ -105,9 +107,8 @@ public class PullsAPI {
 				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "/comments?page=" + i + "\"";
 				
-				System.out.println(command);
 
-				boolean empty = JSONManager.getJSON(pathPullsComments + id + "/comments_" + i + ".json", command);
+				boolean empty = JSONManager.getJSON(pathPullsComments + id + "/comments_" + i + ".json", command, true);
 
 				if (empty) {
 					break;

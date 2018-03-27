@@ -148,7 +148,7 @@ public class Forks {
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 					+ " \"https://api.github.com/repos/" + url + "/forks?page=" + i + "\"";
 
-			boolean empty = JSONManager.getJSON(path + "forks_" + i + ".json", command);
+			boolean empty = JSONManager.getJSON(path + "forks_" + i + ".json", command, false);
 			if (empty) {
 				break;
 			}

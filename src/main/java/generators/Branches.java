@@ -53,7 +53,7 @@ public class Branches {
 
 				// System.out.println(command);
 
-				boolean empty = JSONManager.getJSON(pathFile + k + ".json", command);
+				boolean empty = JSONManager.getJSON(pathFile + k + ".json", command, false);
 				// }
 				// };//
 
@@ -159,7 +159,7 @@ public class Branches {
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 					+ " \"https://api.github.com/repos/" + url + "/branches/" + name + "\"";
 
-			boolean empty = JSONManager.getJSON(path + "general/" + name + ".json", command);
+			boolean empty = JSONManager.getJSON(path + "general/" + name + ".json", command, false);
 			if (empty) {
 				break;
 			}
@@ -244,7 +244,7 @@ public class Branches {
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 					+ " \"https://api.github.com/repos/" + url + "/branches?page=" + i + "\"";
 
-			boolean empty = JSONManager.getJSON(path + "branches_" + i + ".json", command);
+			boolean empty = JSONManager.getJSON(path + "branches_" + i + ".json", command, false);
 			if (empty) {
 				break;
 			}

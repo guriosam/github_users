@@ -474,7 +474,7 @@ public class PullRequests {
 				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "/commits?page=" + i + "\"";
 
-				boolean empty = JSONManager.getJSON(pathCommits + subPath + id + "/" + i + ".json", command);
+				boolean empty = JSONManager.getJSON(pathCommits + subPath + id + "/" + i + ".json", command, false);
 
 				if (empty) {
 					break;
@@ -583,41 +583,57 @@ public class PullRequests {
 			for (String folder : folders) {
 
 				String subPath = path + folder + "/";
-				List<String> files = IO.filesOnFolder(subPath);
 				Util.checkDirectory(subPath);
+				List<String> files = IO.filesOnFolder(subPath);
 
 				for (String file : files) {
 
 					String fileData = new String(Files.readAllBytes(Paths.get(subPath + file)));
 
 					try {
-						List<LinkedTreeMap> comments = gson.fromJson(fileData, List.class);
+
+						List<LinkedTreeMap> comments = new ArrayList<>();
+
+						try {
+							comments = gson.fromJson(fileData, List.class);
+						} catch (Exception e) {
+							System.out.println(subPath + file);
+							continue;
+						}
 
 						for (LinkedTreeMap<?, ?> comment : comments) {
 
-							LinkedTreeMap user = (LinkedTreeMap) comment.get("user");
-							String login = (String) user.get("login");
+							String login = "";
 
-							if (!login.equals(userLogin)) {
-								continue;
-							}
-
-							if (!userCount.containsKey(login)) {
-								userCount.put(login, new UserComment());
-							}
-							String created_at = (String) comment.get("created_at");
-
-							if (!authorDate.equals("")) {
-								if (!Util.checkPastDate(created_at, authorDate, "-")) {
+							if (comment != null && comment.containsKey("user")) {
+								LinkedTreeMap user = (LinkedTreeMap) comment.get("user");
+								if (user != null && user.containsKey("login")) {
+									login = (String) user.get("login");
+								} else {
 									continue;
-
 								}
-							}
+								if (!login.equals(userLogin)) {
+									continue;
+								}
 
-							UserComment count = userCount.get(login);
-							count.setCount(count.getCount() + 1);
-							count.setCreated_at(created_at);
-							userCount.replace(login, count);
+								if (!userCount.containsKey(login)) {
+									userCount.put(login, new UserComment());
+								}
+								String created_at = (String) comment.get("created_at");
+
+								if (!authorDate.equals("")) {
+									if (!Util.checkPastDate(created_at, authorDate, "-")) {
+										continue;
+
+									}
+								}
+
+								UserComment count = userCount.get(login);
+								count.setCount(count.getCount() + 1);
+								count.setCreated_at(created_at);
+								userCount.replace(login, count);
+
+							}
 
 						}
 					} catch (Exception e) {

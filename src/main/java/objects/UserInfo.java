@@ -27,6 +27,8 @@ public class UserInfo {
 	private double modifiedFiles;
 	private double meanModifiedFiles;
 	private double medianModifiedFiles;
+	private double linesChanged;
+	private double meanLinesChanged;
 	private double medianLinesChanged;
 	private double buggyPercent;
 	private int emptyNatureCount;
@@ -35,11 +37,24 @@ public class UserInfo {
 	private int correctiveEngineeringCount;
 	private int forwardEngineeringCount;
 	private int uncategorizedCount;
+
+	private double emptyNaturePercent;
+	private double managementPercent;
+	private double reengineeringPercent;
+	private double correctiveEngineeringPercent;
+	private double forwardEngineeringPercent;
+	private double uncategorizedPercent;
+
 	private int emptySizeCount;
 	private int tinyCount;
 	private int smallCount;
 	private int mediumCount;
 	private int largeCount;
+	private double emptySizePercent;
+	private double tinyPercent;
+	private double smallPercent;
+	private double mediumPercent;
+	private double largePercent;
 
 	private int commitsPulls;
 
@@ -47,7 +62,9 @@ public class UserInfo {
 	private int timeOnProject;
 	// private List<String> weeks;
 
-	private int numberComments;
+	private int numberIssueComments;
+	private int numberPullComments;
+	private int numberCommitComments;
 	private int numberOpenIssues;
 	private int numberClosedIssues;
 	private double pullRequestsMerged;
@@ -59,7 +76,6 @@ public class UserInfo {
 	private int insertionTestsCount;
 	private int insertionPoints;
 	private double testPresence;
-
 
 	public int getCommits() {
 		return commits;
@@ -193,8 +209,9 @@ public class UserInfo {
 		Util.sortList(datesToOrder);
 
 		if (datesToOrder.size() > 0) {
-			timeOnProject = (Days.daysBetween(LocalDateTime.parse(datesToOrder.get(0)), LocalDateTime.parse(maximumDate))
-					.getDays() + 1);
+			timeOnProject = (Days
+					.daysBetween(LocalDateTime.parse(datesToOrder.get(0)), LocalDateTime.parse(maximumDate)).getDays()
+					+ 1);
 		} else {
 			timeOnProject = 0;
 		}
@@ -209,12 +226,12 @@ public class UserInfo {
 	// this.weeks = weeks;
 	// }
 
-	public int getNumberComments() {
-		return numberComments;
+	public int getNumberIssueComments() {
+		return numberIssueComments;
 	}
 
-	public void setNumberComments(int numberComments) {
-		this.numberComments = numberComments;
+	public void setNumberIssueComments(int numberIssueComments) {
+		this.numberIssueComments = numberIssueComments;
 	}
 
 	public int getNumberOpenIssues() {
@@ -302,11 +319,11 @@ public class UserInfo {
 	}
 
 	public void setMeanCommits(String minimumDate, String maximumDate) {
-		
 
 		if (Days.daysBetween(LocalDateTime.parse(minimumDate), LocalDateTime.parse(maximumDate)).getDays() >= 0) {
 			meanCommits = (double) commits
-					/ (Days.daysBetween(LocalDateTime.parse(minimumDate), LocalDateTime.parse(maximumDate)).getDays() + 1);
+					/ (Days.daysBetween(LocalDateTime.parse(minimumDate), LocalDateTime.parse(maximumDate)).getDays()
+							+ 1);
 		} else {
 			meanCommits = (double) commits;
 		}
@@ -375,7 +392,6 @@ public class UserInfo {
 	public void setPullRequestsMerged(double pullRequestsMerged) {
 		this.pullRequestsMerged = pullRequestsMerged;
 	}
-
 
 	public int getEmptyNatureCount() {
 		return emptyNatureCount;
@@ -513,26 +529,155 @@ public class UserInfo {
 		this.buggy = buggy;
 	}
 
-	public void setMedianLinesChanged(List<Double> linesChanged) {
-		Util.sortList(linesChanged);
-
-		if (linesChanged.size() > 0) {
-			if (linesChanged.size() % 2 == 0) {
-				this.medianLinesChanged = ((linesChanged.get(linesChanged.size() / 2) + linesChanged.get(linesChanged.size() / 2 - 1))
-						/ 2);
-			} else {
-				this.medianLinesChanged = (linesChanged.get(linesChanged.size() / 2));
-			}
-		}
-		
-	}
-
 	public void setTestPresence(double testPresence) {
 		this.testPresence = testPresence;
 	}
-	
-	public double getTestPresence(){
+
+	public double getTestPresence() {
 		return this.testPresence;
+	}
+
+	public double getEmptySizePercent() {
+		return emptySizePercent;
+	}
+
+	public void setEmptySizePercent(double emptySizePercent) {
+		this.emptySizePercent = emptySizePercent;
+	}
+
+	public double getTinyPercent() {
+		return tinyPercent;
+	}
+
+	public void setTinyPercent(double tinyPercent) {
+		this.tinyPercent = tinyPercent;
+	}
+
+	public double getSmallPercent() {
+		return smallPercent;
+	}
+
+	public void setSmallPercent(double smallPercent) {
+		this.smallPercent = smallPercent;
+	}
+
+	public double getMediumPercent() {
+		return mediumPercent;
+	}
+
+	public void setMediumPercent(double mediumPercent) {
+		this.mediumPercent = mediumPercent;
+	}
+
+	public double getLargePercent() {
+		return largePercent;
+	}
+
+	public void setLargePercent(double largePercent) {
+		this.largePercent = largePercent;
+	}
+
+	public double getEmptyNaturePercent() {
+		return emptyNaturePercent;
+	}
+
+	public void setEmptyNaturePercent(double emptyNaturePercent) {
+		this.emptyNaturePercent = emptyNaturePercent;
+	}
+
+	public double getManagementPercent() {
+		return managementPercent;
+	}
+
+	public void setManagementPercent(double managementPercent) {
+		this.managementPercent = managementPercent;
+	}
+
+	public double getReengineeringPercent() {
+		return reengineeringPercent;
+	}
+
+	public void setReengineeringPercent(double reengineeringPercent) {
+		this.reengineeringPercent = reengineeringPercent;
+	}
+
+	public double getCorrectiveEngineeringPercent() {
+		return correctiveEngineeringPercent;
+	}
+
+	public void setCorrectiveEngineeringPercent(double correctiveEngineeringPercent) {
+		this.correctiveEngineeringPercent = correctiveEngineeringPercent;
+	}
+
+	public double getForwardEngineeringPercent() {
+		return forwardEngineeringPercent;
+	}
+
+	public void setForwardEngineeringPercent(double forwardEngineeringPercent) {
+		this.forwardEngineeringPercent = forwardEngineeringPercent;
+	}
+
+	public double getUncategorizedPercent() {
+		return uncategorizedPercent;
+	}
+
+	public void setUncategorizedPercent(double uncategorizedPercent) {
+		this.uncategorizedPercent = uncategorizedPercent;
+	}
+
+	public int getNumberPullComments() {
+		return numberPullComments;
+	}
+
+	public void setNumberPullComments(int numberPullComments) {
+		this.numberPullComments = numberPullComments;
+	}
+
+	public int getNumberCommitComments() {
+		return numberCommitComments;
+	}
+
+	public void setNumberCommitComments(int numberCommitComments) {
+		this.numberCommitComments = numberCommitComments;
+	}
+
+	public double getMedianLinesChanged() {
+		return medianLinesChanged;
+	}
+
+	public void setMedianLinesChanged(List<Double> medianLinesChanged) {
+		Util.sortList(medianLinesChanged);
+
+		if (medianLinesChanged.size() > 0) {
+			if (medianLinesChanged.size() % 2 == 0) {
+				this.medianLinesChanged = ((medianLinesChanged.get(medianLinesChanged.size() / 2)
+						+ medianLinesChanged.get(medianLinesChanged.size() / 2 - 1)) / 2);
+			} else {
+				this.medianLinesChanged = (medianLinesChanged.get(medianLinesChanged.size() / 2));
+			}
+		}
+	}
+
+	public double getLinesChanged() {
+		return linesChanged;
+	}
+
+	public void setLinesChanged(double linesChanged) {
+		this.linesChanged = linesChanged;
+	}
+
+	public double getMeanLinesChanged() {
+		return meanLinesChanged;
+	}
+
+	public void setMeanLinesChanged(List<Double> meanLinesChanged) {
+		Util.sortList(meanLinesChanged);
+
+		if (meanLinesChanged.size() > 0) {
+			this.meanLinesChanged = (double) this.linesChanged / meanLinesChanged.size();
+		} else {
+			this.meanLinesChanged = 0.0;
+		}
 	}
 
 }

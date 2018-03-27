@@ -61,36 +61,35 @@ public class Util {
 		return users;
 	}
 
-	public static List<String> getUserList(String project){
+	public static List<String> getUserList(String project) {
 		List<String> buggy = getBuggyUsers(project);
 		List<String> clean = getCleanUsers(project);
-		
+
 		List<String> users = new ArrayList<>();
 		users.addAll(buggy);
 		users.addAll(clean);
-		
-		
+
 		return users;
 	}
-	
-	public static List<String> getCleanUsers(String project){
+
+	public static List<String> getCleanUsers(String project) {
 		List<String> clean = getUserInfo(project);
 		HashSet<String> users = new HashSet<>();
 		List<String> names = new ArrayList<>();
-		
-		for(String c : clean){
+
+		for (String c : clean) {
 			String[] c1 = c.split(",");
 			users.add(c1[0]);
 		}
-		
-		for(String s : users){
+
+		for (String s : users) {
 			names.add(s);
 		}
-		
+
 		return names;
-		
+
 	}
-	
+
 	public static List<String> getUserInfo(String project) {
 
 		List<String> cleanUsers = IO.readAnyFile(getCommitsPath(project) + "users_hashs.csv");
@@ -228,12 +227,12 @@ public class Util {
 		return path;
 	}
 
-	public static String getCommentsPullsFolder(String project){
+	public static String getCommentsPullsFolder(String project) {
 		String path = getPullsFolder(project) + "comments/";
 		checkDirectory(path);
 		return path;
 	}
-	
+
 	public static String getForkFolderPath(String project) {
 		String path = LocalPaths.PATH + project + "/forks/";
 		checkDirectory(path);
@@ -381,6 +380,24 @@ public class Util {
 
 	public static String getIndividualCommitsPath(String project) {
 		String path = getCommitsPath(project) + "individual/";
+		checkDirectory(path);
+		return path;
+	}
+
+	public static String getCommitCommentsFolder(String project) {
+		String path = getCommitsPath(project) + "comments/";
+		checkDirectory(path);
+		return path;
+	}
+	
+	public static String getCommitCommentsGeneralFolder(String project){
+		String path = getCommitCommentsFolder(project) + "general/";
+		checkDirectory(path);
+		return path;
+	}
+
+	public static String getIndividualCommitCommentsFolder(String project) {
+		String path = getCommitCommentsFolder(project) + "individual/";
 		checkDirectory(path);
 		return path;
 	}
