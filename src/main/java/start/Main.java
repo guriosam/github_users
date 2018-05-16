@@ -1,188 +1,164 @@
 package start;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+import endpoints.CommentsAPI;
 import endpoints.CommitsAPI;
+import endpoints.IssuesAPI;
 import endpoints.PullsAPI;
+import generators.Comments;
 import generators.Commits;
+import generators.Issues;
+import generators.PullRequests;
 import generators.Users;
+import metrics.CommentsMetrics;
+import metrics.IssuesMetrics;
+import metrics.NatureMetrics;
+import metrics.PullRequestsMetrics;
+import metrics.SizeMetrics;
 import objects.UserPoint;
+import utils.Git;
+import utils.IO;
+import utils.URLs;
+import utils.Util;
 
 public class Main {
 
 	public static void main(String[] args) {
 
 		List<String> projects = new ArrayList<>();
-		List<String> urls = new ArrayList<>();
 
-//		projects.add("elasticsearch");
-//		urls.add("elastic/elasticsearch");
-//		projects.add("spring-boot");
-//		urls.add("spring-projects/spring-boot");
-//		projects.add("netty");
-//		urls.add("netty/netty");
-//		projects.add("bazel");
-//		urls.add("bazelbuild/bazel");
-//		projects.add("presto");
-//		urls.add("prestodb/presto");
-//		projects.add("Signal-Android");
-//		urls.add("signalapp/Signal-Android");
-//		projects.add("okhttp");
-//		urls.add("square/okhttp");
-		
-		
-		//projects.add("elasticsearch-hadoop");
-		//urls.add("elastic/elasticsearch-hadoop");
-		//projects.add("HikariCP");
-		//urls.add("brettwooldridge/HikariCP");
-		//projects.add("ExoPlayer");
-		//urls.add("google/ExoPlayer");
-		//projects.add("MaterialDrawer");
-		//urls.add("mikepenz/MaterialDrawer");
-		
-		//projects.add("Hystrix");
-		//urls.add("Netflix/Hystrix");
-		
-		//projects.add("material-dialogs");
-		//urls.add("afollestad/material-dialogs");
-		
+		projects.add("elasticsearch");
+		projects.add("spring-boot");
+		projects.add("netty");
+		projects.add("bazel");
+		projects.add("presto");
+		projects.add("Signal-Android");
+		projects.add("okhttp");
+		projects.add("RxJava");
 		projects.add("guava");
-		urls.add("google/guava");
-		
-		
-		//projects.add("glide");
-		//urls.add("bumptech/glide");
-		//projects.add("fresco");
-		//urls.add("facebook/fresco");
-		
-		//projects.add("RxJava");
-		//urls.add("ReactiveX/RxJava");
-		 
-		int total = 0;
+
+		projects.add("elasticsearch-hadoop");
+		projects.add("HikariCP");
+		projects.add("ExoPlayer");
+		projects.add("MaterialDrawer");
+		projects.add("Hystrix");
+		projects.add("material-dialogs");
+
+		projects.add("glide");
+		projects.add("fresco");
 
 		for (int i = 0; i < projects.size(); i++) {
 
 			String project = projects.get(i);
-			String url = urls.get(i);
-			
+
 			System.out.println(project);
-			
-			//CommitsAPI.downloadAllCommits(project, url);
-			//Commits.collectHashsFromUsers(project);
-			//CommitsAPI.downloadAllIndividualCommits(project, url);
-			//Git.cloneProject(url);
 
-			// System.out.println("********** " + project.toUpperCase() + "
-			// *********");
-			
-			CommitsAPI.downloadGroupOfCommitsByAuthor(project, url);
-			//CommitsAPI.downloadUserCommitsFromMaster(project, url);
-			
-			/*// ISSUES
-			System.out.println("Generating Repository Issues Call");
-			IssuesAPI.generateRepositoryIssuesCall(project, url);
-			System.out.println("Generating Issues ID");
+			CommitsAPI.downloadAllCommits(project, URLs.getUrl(project));
+			Commits.collectHashsFromUsers(project);
+			CommitsAPI.downloadAllIndividualCommits(project, URLs.getUrl(project));
+
+			Git.cloneProject(project);
+
+			// ISSUES
+			// System.out.println("Generating Repository Issues Call");
+			IssuesAPI.generateRepositoryIssuesCall(project, URLs.getUrl(project));
+			// System.out.println("Generating Issues ID");
 			Issues.generateIssuesIds(project);
-			System.out.println("Generating Individual Issues Call");
-			Issues.generateIndividualIssuesCall(project, url);
-			System.out.println("Reading Issues");
+			// System.out.println("Generating Individual Issues Call");
+			IssuesAPI.generateIndividualIssuesCall(project, URLs.getUrl(project));
+			// System.out.println("Reading Issues");
 			Issues.readIssues(project);
-			System.out.println("Filtering Issues by Users");
+			// System.out.println("Filtering Issues by Users");
 			Issues.filterIssuesByUser(project);
-			*/
-			
-			
-			// COMMENTS
-			//System.out.println("Generating Comments Calls");
-			//Issues.generateCommentsCalls(project, url);
-			//CommentsAPI.downloadGroupOfCommitComments(project, url);
-			//Comments.generateCommentsIds(project);
-			//CommentsAPI.downloadIndividualCommitComments(project, url);
-		
+
+			// // COMMENTS //System.out.println("Generating Comments Calls");
+			IssuesAPI.generateCommentsCalls(project, URLs.getUrl(project));
+			CommentsAPI.downloadGroupOfCommitComments(project, URLs.getUrl(project));
+			Comments.generateCommentsIds(project);
+			CommentsAPI.downloadIndividualCommitComments(project, URLs.getUrl(project));
+
 			// PULL REQUESTS
+			PullsAPI.generatePullsCalls(project, URLs.getUrl(project));
+			PullRequests.generateIndividualPullsCalls(project, URLs.getUrl(project));
 
-//			 Issues.generatePullsCalls(project, url);
-//			 PullRequests.generateIndividualPullsCalls(project, url);
-			 
-//			PullRequests.generatePullsIds(project);
-			 
-			//System.out.println("Downloading Commits of Pulls");
-		//	PullRequests.collectCommitsOnPullRequests(project, url);
+			PullRequests.generatePullsIds(project);
 
-		//	System.out.println("Collecting Pull Commits Hashs");
-		//	PullRequests.collectPullCommitsHashs(project);
-			
-		//	PullRequests.collectPullCommitsByUser(project, url);
-		
-		//	System.out.println("Collecting Pull Comments");
-			
-		PullsAPI.downloadCommentsInReviews(project, url);
-			// System.out.println("Comparing Hashs");
-			/*
-			 * TODO
-			Issues.compareHashs(project, url);
-			
-			*/
-			
-		//	PullRequests.getIdsFromPerilI(project, url);
-		//	PullRequests.getIdsFromPerilII(project);
-			
-			//Issues.readPullRequests(project);
+			// System.out.println("Downloading Commits of Pulls");
+			PullRequests.collectCommitsOnPullRequests(project, URLs.getUrl(project));
 
-			/*
-			 * TODO
-				PullRequests.collectPullCommitsByUser(project, url);
-			 */
-			// FINAL DATA
-			 System.out.println("Analyzing all info");
+			// System.out.println("Collecting Pull Commits Hashs");
+			PullRequests.collectPullCommitsHashs(project);
 
-			//Commits.collectHashsFromUsers(project);
-			List<UserPoint> userPoints = Users.organizePoints(project);
-			
-			Commits.analyzeCommits(project, userPoints);
+			// System.out.println("Collecting Pull Comments");
+			PullRequests.downloadPullsCommits(project);
+			PullRequests.analyzePullCommits(project);
+			PullsAPI.downloadCommentsInReviews(project, URLs.getUrl(project));
 
-			//PullRequests.analysePulls(project, userPoints);
+			// PullRequests.getIdsFromPerilI(project, URLs.getUrl(project));
+			// PullRequests.getIdsFromPerilII(project);
 
-			//PullRequests.joinPullsToOutput(project);
-			// System.out.println("done");
+			PullRequests.readPullRequests(project);
 
-			/*
-			
-			List<UserPullRequest> userPulls = Issues.getPullRequests(project);
-			List<String> h1 = IO.readAnyFile(Util.getPullsFolder(project) + "heuristic1.txt");
-			List<String> h2 = IO.readAnyFile(Util.getPullsFolder(project) + "pull_requests_h2.txt");
-			int count = 0;
-			for (UserPoint p : userPoints) {
-				String name = p.getName();
-				for (UserPullRequest userPull : userPulls) {
-					if (userPull.getUser().equals(name)) {
-						if (h1.contains(userPull.getId())) {
-							count++;
-							break;
-						}
+			Commits.collectOwnership(project);
 
-						if (h2.contains(userPull.getId())) {
-							count++;
-							break;
-						}
-					}
-				}
-			}
-			
-			System.out.println(project + ": " + count);
-			
-			*/
-			
-			/*
-			 * int count = 0; for(UserPoint p : userPoints){ String name =
-			 * p.getName();
-			 * 
-			 * count += IO.filesOnFolder(Util.getUserCommitsPath(project,
-			 * name)).size(); } total += count; System.out.println(count);
-			 */
+			Commits.collectHashsFromUsers(project);
+
+			Main.outputs(project);
 
 		}
+
+	}
+
+	public static void outputs(String project) {
+
+		List<UserPoint> userPoints = Users.organizePoints(project);
+
+		System.out.println("Users: " + userPoints.size());
+
+		Commits.generateCommitsInfo(project);
+		PullRequestsMetrics.analyzePullRequestsMetrics(project, userPoints);
+		IssuesMetrics.analyzeIssuesMetrics(project, userPoints);
+		CommentsMetrics.analyzeComments(project, userPoints);
+		NatureMetrics.analyzeNature(project, userPoints);
+		SizeMetrics.analyzeSize(project, userPoints);
+		Commits.analyzeOwnership(project);
+
+		System.out.println("Analyzing all info");
+		Commits.analyzeCommits(project, userPoints);
+
+		// Calculate how many Commits, Issues, Pulls and Users we analyzed.
+		// calculateMiningInfo(project);
+
+		System.out.println("Finished");
+	}
+
+	public static void calculateMiningInfo(String project) {
+
+		List<String> commits = IO.filesOnFolder(Util.getIndividualCommitsPath(project));
+		List<String> issues = IO.filesOnFolder(Util.getIndividualIssuesFolder(project));
+		List<String> pulls = IO.filesOnFolder(Util.getIndividualPullsFolder(project));
+		HashMap<String, List<String>> userCount = Issues.readComments(project);
+		HashMap<String, List<String>> userPullsCommentCount = PullRequests.readComments(project);
+		HashMap<String, List<String>> userCommitCommentCount = Comments.readCommitComments(project);
+		int comments = 0;
+
+		for (String u : userCount.keySet()) {
+			comments += userCount.get(u).size();
+		}
+		for (String u : userPullsCommentCount.keySet()) {
+			comments += userPullsCommentCount.get(u).size();
+		}
+		for (String u : userCommitCommentCount.keySet()) {
+			comments += userCommitCommentCount.get(u).size();
+		}
+
+		System.out.println("Commits: " + commits.size());
+		System.out.println("Issues: " + issues.size());
+		System.out.println("Pulls: " + pulls.size());
+		System.out.println("Comments: " + comments + "\n");
 
 	}
 

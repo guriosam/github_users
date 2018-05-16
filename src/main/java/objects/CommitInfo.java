@@ -26,6 +26,11 @@ public class CommitInfo {
 		this.buggy = buggy;
 	}
 	
+	@Override
+	public String toString() {
+		return "CommitInfo [hash=" + hash + ", date=" + date + ", buggy=" + buggy + "]";
+	}
+	
 	
 
 }

@@ -1,12 +1,10 @@
 package utils;
 
-import java.util.List;
-
-import objects.UserPoint;
-
 public class Git {
 
-	public static void cloneProject(String url) {
+	public static void cloneProject(String project) {
+		
+		String url = URLs.getUrl(project);
 
 		try {
 			Process p = Runtime.getRuntime().exec("git clone https://github.com/" + url + " " + LocalPaths.PATH_GIT);

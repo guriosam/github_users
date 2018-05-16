@@ -26,6 +26,7 @@ import utils.Git;
 import utils.IO;
 import utils.JSONManager;
 import utils.LocalPaths;
+import utils.URLs;
 import utils.Util;
 
 public class PullRequests {
@@ -74,7 +75,7 @@ public class PullRequests {
 
 	public static void analysePulls(String project, List<UserPoint> userPoints) {
 
-		List<UserPullRequest> userPull = Issues.getPullRequests(project);
+		List<UserPullRequest> userPull = PullRequests.getPullRequests(project);
 
 		boolean approach = true;
 		boolean heuristics = true;
@@ -378,7 +379,7 @@ public class PullRequests {
 		String path = Util.getPullCommitsPath(project);
 		List<String> folders = IO.filesOnFolder(path + "general/");
 
-		HashSet<String> pullsMerged = new HashSet<>();
+		HashMap<String, Integer> commitsOnPulls = new HashMap<>();
 
 		List<String> hashs = new ArrayList<>();
 
@@ -401,6 +402,12 @@ public class PullRequests {
 
 					List<LinkedTreeMap> commits = gson.fromJson(fileData, List.class);
 
+					if (!commitsOnPulls.containsKey(folder)) {
+						commitsOnPulls.put(folder, commits.size());
+					} else {
+						commitsOnPulls.replace(folder, commits.size());
+					}
+
 					for (LinkedTreeMap c : commits) {
 
 						if (c.containsKey("sha")) {
@@ -417,7 +424,6 @@ public class PullRequests {
 
 										if (login != null) {
 											hashs.add(login + "," + sha);
-											pullsMerged.add(folder + "," + sha);
 
 										}
 									}
@@ -434,7 +440,64 @@ public class PullRequests {
 			}
 		}
 
-		// IO.writeAnyFile(path + "pulls_hashs.txt", hashs);
+		List<String> folders2 = IO.filesOnFolder(path + "general_not_merged/");
+		for (String folder : folders2) {
+
+			List<String> files = IO.filesOnFolder(path + "general_not_merged/" + folder + "/");
+
+			for (String file : files) {
+
+				if (!file.contains("json")) {
+					continue;
+				}
+
+				try {
+
+					String fileData = new String(
+							Files.readAllBytes(Paths.get(path + "general_not_merged/" + folder + "/" + file)));
+
+					List<LinkedTreeMap> commits = gson.fromJson(fileData, List.class);
+
+					if (!commitsOnPulls.containsKey(folder)) {
+						commitsOnPulls.put(folder, commits.size());
+					} else {
+						commitsOnPulls.replace(folder, commits.size());
+					}
+
+					for (LinkedTreeMap c : commits) {
+
+						if (c.containsKey("sha")) {
+							String sha = (String) c.get("sha");
+							if (sha != null) {
+
+								if (c.containsKey("author")) {
+
+									LinkedTreeMap author = (LinkedTreeMap) c.get("author");
+
+									if (author != null) {
+
+										String login = (String) author.get("login");
+
+										if (login != null) {
+											hashs.add(login + "," + sha);
+										}
+									}
+								}
+							}
+						}
+
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			}
+		}
+
+		IO.writeAnyFile(path + "pulls_hashs.txt", hashs);
+		String output = gson.toJson(commitsOnPulls);
+		IO.writeAnyString(path + "pulls_commits_count.json", output);
 
 	}
 
@@ -570,7 +633,7 @@ public class PullRequests {
 		IO.writeAnyFile(Util.getPullsFolder(project) + "h2_hashs.txt", perilII);
 	}
 
-	public static HashMap<String, UserComment> readComments(String project, String userLogin, String authorDate) {
+	public static HashMap<String, List<String>> readComments(String project) {
 
 		try {
 
@@ -578,7 +641,7 @@ public class PullRequests {
 			String path = Util.getCommentsPullsFolder(project);
 			List<String> folders = IO.filesOnFolder(path);
 
-			HashMap<String, UserComment> userCount = new HashMap<String, UserComment>();
+			HashMap<String, List<String>> userCount = new HashMap<>();
 
 			for (String folder : folders) {
 
@@ -612,26 +675,13 @@ public class PullRequests {
 								} else {
 									continue;
 								}
-								if (!login.equals(userLogin)) {
-									continue;
-								}
 
 								if (!userCount.containsKey(login)) {
-									userCount.put(login, new UserComment());
+									userCount.put(login, new ArrayList<String>());
 								}
 								String created_at = (String) comment.get("created_at");
 
-								if (!authorDate.equals("")) {
-									if (!Util.checkPastDate(created_at, authorDate, "-")) {
-										continue;
-
-									}
-								}
-
-								UserComment count = userCount.get(login);
-								count.setCount(count.getCount() + 1);
-								count.setCreated_at(created_at);
-								userCount.replace(login, count);
+								userCount.get(login).add(created_at);
 
 							}
 
@@ -655,6 +705,240 @@ public class PullRequests {
 
 		return new HashMap<>();
 
+	}
+
+	public static void downloadPullsCommits(String project) {
+		// TODO Auto-generated method stub
+		String path = Util.getPullCommitsPath(project);
+
+		List<String> pullsInfo = IO.readAnyFile(path + "pulls_hashs.txt");
+
+		List<String> hashs = new ArrayList<>();
+
+		for (String pullInfo : pullsInfo) {
+			String[] line = pullInfo.split(",");
+
+			String hash = line[1];
+
+			if (!hash.equals("null") && !hash.equals("")) {
+				hashs.add(hash);
+			}
+
+		}
+
+		CommitsAPI.downloadIndividualCommitsByHash(hashs, URLs.getUrl(project),
+				Util.getPullIndividualCommitsPath(project));
+
+	}
+
+	public static List<UserPullRequest> getPullRequests(String project) {
+
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		String path = LocalPaths.PATH + project + "/pull_requests.json";
+		List<UserPullRequest> userPull = new ArrayList<>();
+
+		List<String> heuristic1 = IO.readAnyFile(Util.getPullsFolder(project) + "h1_ids.txt");
+		List<String> heuristic2 = IO.readAnyFile(Util.getPullsFolder(project) + "pull_requests_h2.txt");
+
+		try {
+			String fileData = new String(Files.readAllBytes(Paths.get(path)));
+			List<LinkedTreeMap> pulls = gson.fromJson(fileData, List.class);
+
+			for (LinkedTreeMap pull : pulls) {
+
+				boolean m = false;
+				UserPullRequest upr = new UserPullRequest();
+				String id = "";
+
+				if (pull.containsKey("id")) {
+					String number = (String) pull.get("id");
+					upr.setId(number);
+					id = number;
+
+					if (heuristic1.contains(id)) {
+						m = true;
+					}
+					if (heuristic2.contains(id)) {
+						m = true;
+					}
+
+				}
+				if (pull.containsKey("state")) {
+					upr.setState((String) pull.get("state"));
+
+				}
+				String name = "";
+				if (pull.containsKey("user")) {
+					String number = (String) pull.get("user");
+					upr.setUser(number);
+					name = number;
+				}
+
+				if (pull.containsKey("merged")) {
+
+					if (m) {
+						upr.setMerged(true);
+					} else {
+						upr.setMerged((boolean) pull.get("merged"));
+					}
+
+				}
+				if (pull.containsKey("merged_by")) {
+					if (pull != null && pull.containsKey("merged_by")) {
+						upr.setMerged_by((String) pull.get("merged_by"));
+					}
+				}
+
+				if (pull.containsKey("created_at")) {
+					String created_date = (String) pull.get("created_at");
+					upr.setCreated_at(created_date);
+				}
+				if (pull.containsKey("closed_at")) {
+					String closed_date = (String) pull.get("closed_at");
+					upr.setClosed_at(closed_date);
+				}
+
+				if (pull.containsKey("reviewers")) {
+					List<String> users = (List<String>) pull.get("reviewers");
+
+					List<String> rev = new ArrayList<>();
+					for (String user : users) {
+						rev.add(user);
+					}
+					upr.setReviewers(rev);
+				}
+
+				userPull.add(upr);
+
+			}
+
+			return userPull;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return new ArrayList<UserPullRequest>();
+
+	}
+
+	public static void readPullRequests(String project) {
+
+		System.out.println("Reading Pull Requests");
+
+		try {
+
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			String path = LocalPaths.PATH + project + "/pulls/individual/";
+			List<String> files = IO.filesOnFolder(path);
+			List<UserPullRequest> userPull = new ArrayList<>();
+
+			for (String file : files) {
+
+				if (!file.contains("json")) {
+					continue;
+				}
+
+				String fileData = new String(Files.readAllBytes(Paths.get(path + file)));
+				LinkedTreeMap pull = gson.fromJson(fileData, LinkedTreeMap.class);
+
+				UserPullRequest upr = new UserPullRequest();
+
+				if (pull.containsKey("user")) {
+
+					LinkedTreeMap user = (LinkedTreeMap) pull.get("user");
+
+					if (user != null && user.containsKey("login")) {
+						String login = (String) user.get("login");
+						upr.setUser(login);
+					}
+
+				}
+
+				if (pull.containsKey("state")) {
+					upr.setState((String) pull.get("state"));
+
+				}
+
+				if (pull.containsKey("created_at")) {
+					upr.setCreated_at((String) pull.get("created_at"));
+
+				}
+
+				if (pull.containsKey("closed_at")) {
+					upr.setClosed_at((String) pull.get("closed_at"));
+
+				}
+				if (pull.containsKey("merged")) {
+					upr.setMerged((boolean) pull.get("merged"));
+				}
+				if (pull.containsKey("merged_by")) {
+					LinkedTreeMap user = (LinkedTreeMap) pull.get("merged_by");
+					if (user != null && user.containsKey("login")) {
+						upr.setMerged_by((String) user.get("login"));
+					}
+				}
+				if (pull.containsKey("requested_reviewers")) {
+					List<LinkedTreeMap> users = (List<LinkedTreeMap>) pull.get("requested_reviewers");
+
+					List<String> rev = new ArrayList<>();
+					for (LinkedTreeMap<?, ?> user : users) {
+						if (user != null && user.containsKey("login")) {
+							rev.add((String) user.get("login"));
+						}
+					}
+
+					upr.setReviewers(rev);
+				}
+				if (pull.containsKey("number")) {
+					String number = pull.get("number") + "";
+					number = number.replace(".", "");
+					number = number.substring(0, number.length() - 1);
+					upr.setId(number);
+				}
+
+				if (upr.getUser() != null && !upr.getUser().equals("")) {
+					userPull.add(upr);
+				}
+
+			}
+
+			String output = gson.toJson(userPull);
+
+			IO.writeAnyString(LocalPaths.PATH + project + "/pull_requests.json", output);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			// TODO: handle exception
+		}
+
+	}
+
+	public static void analyzePullCommits(String project) {
+		// TODO Auto-generated method stub
+		try{
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		String fileData = new String(Files.readAllBytes(Paths.get(Util.getPullCommitsPath(project) + "pulls_commits_count.json")));
+		LinkedTreeMap<String, Double> pullsCount = gson.fromJson(fileData, LinkedTreeMap.class);
+		
+		List<Double> counts = new ArrayList<>();
+		double total = 0.0; 
+		for(String key : pullsCount.keySet()){
+			double value = pullsCount.get(key);
+			counts.add(value);
+			total += value;
+		}
+		
+		double median = Util.calculateMedianDouble(counts);
+		double mean = (double) total / (double) counts.size();
+		
+		System.out.println("Mean: " + mean + " Median: " + median);
+		//IO.writeAnyString(Util.getPullCommitsPath(project) + "pulls_commit_size.txt",);
+		
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		
 	}
 
 }

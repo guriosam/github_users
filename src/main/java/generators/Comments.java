@@ -49,7 +49,7 @@ public class Comments {
 		IO.writeAnyFile(Util.getCommitCommentsFolder(project) + "comments_ids.txt", ids);
 	}
 
-	public static HashMap<String, UserComment> readCommitComments(String project, String userLogin, String authorDate) {
+	public static HashMap<String, List<String>> readCommitComments(String project) {
 
 		try {
 
@@ -57,7 +57,7 @@ public class Comments {
 			String path = Util.getIndividualCommitCommentsFolder(project);
 			List<String> files = IO.filesOnFolder(path);
 
-			HashMap<String, UserComment> userCount = new HashMap<String, UserComment>();
+			HashMap<String, List<String>> userCount = new HashMap<>();
 
 			for (String file : files) {
 
@@ -67,26 +67,12 @@ public class Comments {
 				LinkedTreeMap user = (LinkedTreeMap) comment.get("user");
 				String login = (String) user.get("login");
 
-				if (!login.equals(userLogin)) {
-					continue;
-				}
-
 				if (!userCount.containsKey(login)) {
-					userCount.put(login, new UserComment());
+					userCount.put(login, new ArrayList<String>());
 				}
 				String created_at = (String) comment.get("created_at");
 
-				if (!authorDate.equals("")) {
-					if (!Util.checkPastDate(created_at, authorDate, "-")) {
-						continue;
-
-					}
-				}
-
-				UserComment count = userCount.get(login);
-				count.setCount(count.getCount() + 1);
-				count.setCreated_at(created_at);
-				userCount.replace(login, count);
+				userCount.get(login).add(created_at);
 
 			}
 

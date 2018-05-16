@@ -118,4 +118,24 @@ public class PullsAPI {
 		}
 
 	}
+
+	public static void generatePullsCalls(String project, String url) {
+	
+		System.out.println("Generating Pulls Calls");
+	
+		String path = Util.getGeneralPullsFolder(project);
+	
+		for (int i = 1; i < 2000; i++) {
+	
+			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+					+ " \"https://api.github.com/repos/" + url + "/pulls" + "?state=all&page=" + i + "\"";
+	
+			boolean empty = JSONManager.getJSON(path + i + ".json", command, false);
+	
+			if (empty) {
+				break;
+			}
+		}
+	
+	}
 }

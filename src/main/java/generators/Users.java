@@ -171,6 +171,7 @@ public class Users {
 		HashMap<String, List<CommitInfo>> userPoint = new HashMap<>();
 		List<UserPoint> userPoints = new ArrayList<>();
 
+		List<String> buggyHashs = new ArrayList<>();
 		HashSet<String> hashs = new HashSet<>();
 
 		for (String line : users) {
@@ -180,47 +181,59 @@ public class Users {
 			String hash = l[0];
 			hash = hash.replace("\"", "");
 
-			if (hashs.contains(hash)) {
-				continue;
-			}
-
-			hashs.add(hash);
-
 			String user = l[1];
 			user = user.replace("\"", "");
 
-			if (user.equals("NA")) {
+			if (user.equals("NA") || user.equals("(no author)")) {
 				continue;
 			}
 
-			String authorDate = l[4];
-			authorDate = authorDate.replace("\"", "");
+			buggyHashs.add(hash);
 
-			// UserPoint p = new UserPoint();
-			// p.setName(user);
-
-			CommitInfo commit = new CommitInfo();
-			commit.setHash(hash);
-			commit.setDate(authorDate);
-			commit.setBuggy(true);
-
-			if (!userPoint.containsKey(user)) {
-				// p.setCommitInfo(new ArrayList<CommitInfo>());
-				userPoint.put(user, new ArrayList<CommitInfo>());
-			}
-
-			userPoint.get(user).add(commit);
+			// String authorDate = l[4];
+			// authorDate = authorDate.replace("\"", "");
+			//
+			// CommitInfo commit = new CommitInfo();
+			// commit.setHash(hash);
+			// commit.setDate(authorDate);
+			// commit.setBuggy(true);
+			//
+			// if (!userPoint.containsKey(user)) {
+			// p.setCommitInfo(new ArrayList<CommitInfo>());
+			// userPoint.put(user, new ArrayList<CommitInfo>());
+			// }
+			//
+			// userPoint.get(user).add(commit);
 
 		}
 
 		List<String> cleanUsers = Util.getUserInfo(project);
 
+		
 		for (String line : cleanUsers) {
 			String[] l = line.split(",");
 
 			String hash = l[1];
 			String user = l[0];
 			String date = l[2];
+
+			if (l.length > 3) {
+				user = l[0] + l[1];
+				hash = l[2];
+				date = l[3];
+			}
+			
+			if(user.contains(" ")){
+				continue;
+			}
+			
+			if(user.contains("\\")){
+				continue;
+			}
+
+			if (user.equals("NA") || user.equals("(no author)")) {
+				continue;
+			}
 
 			if (hashs.contains(hash)) {
 				continue;
@@ -232,11 +245,16 @@ public class Users {
 			commit.setHash(hash);
 			commit.setDate(date);
 			commit.setBuggy(false);
+			
+			if (buggyHashs.contains(hash)) {
+				commit.setBuggy(true);
+			}
 
 			if (!userPoint.containsKey(user)) {
 				// p.setCommitInfo(new ArrayList<CommitInfo>());
 				userPoint.put(user, new ArrayList<CommitInfo>());
 			}
+			
 
 			userPoint.get(user).add(commit);
 
@@ -245,8 +263,6 @@ public class Users {
 		for (String k : userPoint.keySet()) {
 
 			List<CommitInfo> info = userPoint.get(k);
-
-			HashSet<String> cHashs = new HashSet<>();
 
 			for (int i = 0; i < info.size() - 1; i++) {
 				for (int j = i + 1; j < info.size(); j++) {
@@ -265,13 +281,14 @@ public class Users {
 
 			userPoints.add(point);
 
-			// System.out.println(k);
-			// for (CommitInfo c : info) {
-			// System.out.println(c.getDate() + ": " + c.getHash());
-			// }
-
 		}
-
+		/*int total = 0;
+		for (UserPoint up : userPoints) {
+			total += up.getCommitInfo().size();
+			System.out.println(up);
+		}
+		System.out.println(total);
+		 */
 		return userPoints;
 
 	}

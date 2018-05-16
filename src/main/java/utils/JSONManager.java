@@ -26,6 +26,8 @@ public class JSONManager {
 			boolean wait = true;
 			long time = 0;
 			String t = "";
+			String message = "";
+			boolean sha = false;
 
 			while (wait) {
 
@@ -41,12 +43,18 @@ public class JSONManager {
 
 					if (read) {
 
+						message += a;
 						if (a.equals("")) {
 							continue;
 						}
 
 						if (a.contains("https://developer.github.com/v3/#pagination")) {
+							System.out.println("Pagination");
 							return true;
+						}
+
+						if (a.contains("sha")) {
+							sha = true;
 						}
 
 						json += a + "\n";
@@ -56,26 +64,34 @@ public class JSONManager {
 						read = true;
 					}
 
-					if (a.contains("400 Bad Request")) {
-						return true;
+					if (!sha) {
+						if (a.contains("400 Bad Request")) {
+							System.out.println(message);
+							System.out.println("400");
+							return true;
+						}
 					}
 
 					if (!read) {
-						if (a.contains("Status:")) {
-							if (a.contains("200")) {
-								wait = false;
-							} else {
-								if (a.contains("500")) {
-									return true;
+						if (!sha) {
+							if (a.contains("Status:")) {
+								if (a.contains("200")) {
+									wait = false;
+								} else {
+									if (a.contains("500")) {
+										System.out.println("500");
+										return true;
+									}
+
+									if (a.contains("404")) {
+										System.out.println("404");
+										return true;
+									}
+
+									System.out.println(a);
+
+									wait = true;
 								}
-
-								if (a.contains("404")) {
-									return true;
-								}
-
-								System.out.println(a);
-
-								wait = true;
 							}
 						}
 

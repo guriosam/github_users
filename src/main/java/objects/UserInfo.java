@@ -18,19 +18,40 @@ public class UserInfo {
 	private int commits;
 	private double meanCommits;
 	private double medianCommits;
+	private String commitFrequency;
+
+	private double REXPCommit;
+	private int SEXPCommit;
+
+	private int expActivity;
+	private double REXPActivity;
+
+	private int expReview;
+	private double REXPReview;
+
 	private double additions;
+	private double totalAdditions;
 	private double meanAdditions;
 	private double medianAdditions;
 	private double deletions;
+	private double totalDeletions;
 	private double meanDeletions;
 	private double medianDeletions;
 	private double modifiedFiles;
+	private double totalModifiedFiles;
 	private double meanModifiedFiles;
 	private double medianModifiedFiles;
 	private double linesChanged;
+	private double totalLinesChanged;
 	private double meanLinesChanged;
 	private double medianLinesChanged;
+	private double previousBuggyPercent;
 	private double buggyPercent;
+	private double ownership;
+	private double medianOwnership;
+
+	private String nature;
+
 	private int emptyNatureCount;
 	private int managementCount;
 	private int reengineeringCount;
@@ -44,6 +65,12 @@ public class UserInfo {
 	private double correctiveEngineeringPercent;
 	private double forwardEngineeringPercent;
 	private double uncategorizedPercent;
+
+	private boolean isEmptySize;
+	private boolean isTiny;
+	private boolean isSmall;
+	private boolean isMedium;
+	private boolean isLarge;
 
 	private int emptySizeCount;
 	private int tinyCount;
@@ -60,7 +87,7 @@ public class UserInfo {
 
 	private int activeDays;
 	private int timeOnProject;
-	// private List<String> weeks;
+	private int repositoryTime;
 
 	private int numberIssueComments;
 	private int numberPullComments;
@@ -72,9 +99,10 @@ public class UserInfo {
 	private int numberOpenPullRequests;
 	private int numberClosedPullRequests;
 	private int numberRequestedReviewer;
-	private boolean insertionTests;
-	private int insertionTestsCount;
+	private boolean hasTests;
+	private int testsCount;
 	private int insertionPoints;
+	private int previousInsertionPoints;
 	private double testPresence;
 
 	public int getCommits() {
@@ -204,27 +232,12 @@ public class UserInfo {
 		return timeOnProject;
 	}
 
-	public void setTimeOnProject(List<String> datesToOrder, String maximumDate) {
+	public void setTimeOnProject(String minimumDate, String maximumDate) {
 
-		Util.sortList(datesToOrder);
-
-		if (datesToOrder.size() > 0) {
-			timeOnProject = (Days
-					.daysBetween(LocalDateTime.parse(datesToOrder.get(0)), LocalDateTime.parse(maximumDate)).getDays()
-					+ 1);
-		} else {
-			timeOnProject = 0;
-		}
+		timeOnProject = (Days.daysBetween(LocalDateTime.parse(minimumDate), LocalDateTime.parse(maximumDate)).getDays()
+				+ 1);
 
 	}
-
-	// public List<String> getWeeks() {
-	// return weeks;
-	// }
-
-	// public void setWeeks(List<String> weeks) {
-	// this.weeks = weeks;
-	// }
 
 	public int getNumberIssueComments() {
 		return numberIssueComments;
@@ -373,16 +386,16 @@ public class UserInfo {
 	}
 
 	public void setInsertionTests(boolean b) {
-		this.insertionTests = b;
+		this.hasTests = b;
 
 	}
 
 	public int getInsertionTestsCount() {
-		return insertionTestsCount;
+		return testsCount;
 	}
 
 	public void setInsertionTestsCount(int insertionTestsCount) {
-		this.insertionTestsCount = insertionTestsCount;
+		this.testsCount = insertionTestsCount;
 	}
 
 	public double getPullRequestsMerged() {
@@ -442,7 +455,7 @@ public class UserInfo {
 	}
 
 	public boolean isInsertionTests() {
-		return insertionTests;
+		return hasTests;
 	}
 
 	public void setMeanCommits(double meanCommits) {
@@ -678,6 +691,242 @@ public class UserInfo {
 		} else {
 			this.meanLinesChanged = 0.0;
 		}
+	}
+
+	public String getCommitFrequency() {
+		return commitFrequency;
+	}
+
+	public void setCommitFrequency(String commitFrequency) {
+		this.commitFrequency = commitFrequency;
+	}
+
+	public boolean isEmptySize() {
+		return isEmptySize;
+	}
+
+	public void setEmptySize(boolean isEmptySize) {
+		this.isEmptySize = isEmptySize;
+	}
+
+	public boolean isTiny() {
+		return isTiny;
+	}
+
+	public void setTiny(boolean isTiny) {
+		this.isTiny = isTiny;
+	}
+
+	public boolean isSmall() {
+		return isSmall;
+	}
+
+	public void setSmall(boolean isSmall) {
+		this.isSmall = isSmall;
+	}
+
+	public boolean isLarge() {
+		return isLarge;
+	}
+
+	public void setLarge(boolean isLarge) {
+		this.isLarge = isLarge;
+	}
+
+	public boolean isMedium() {
+		return isMedium;
+	}
+
+	public void setMedium(boolean isMedium) {
+		this.isMedium = isMedium;
+	}
+
+	public double getREXP() {
+		return REXPCommit;
+	}
+
+	public void setREXP(double rEXP2) {
+		REXPCommit = rEXP2;
+	}
+
+	public int getSEXP() {
+		return SEXPCommit;
+	}
+
+	public void setSEXP(int sEXP) {
+		SEXPCommit = sEXP;
+	}
+
+	public double getTotalAdditions() {
+		return totalAdditions;
+	}
+
+	public void setTotalAdditions(double totalAdditions) {
+		this.totalAdditions = totalAdditions;
+	}
+
+	public double getTotalDeletions() {
+		return totalDeletions;
+	}
+
+	public void setTotalDeletions(double totalDeletions) {
+		this.totalDeletions = totalDeletions;
+	}
+
+	public double getTotalModifiedFiles() {
+		return totalModifiedFiles;
+	}
+
+	public void setTotalModifiedFiles(double totalModifiedFiles) {
+		this.totalModifiedFiles = totalModifiedFiles;
+	}
+
+	public double getTotalLinesChanged() {
+		return totalLinesChanged;
+	}
+
+	public void setTotalLinesChanged(double totalLinesChanged) {
+		this.totalLinesChanged = totalLinesChanged;
+	}
+
+	public double getMedianModifiedFiles() {
+		return medianModifiedFiles;
+	}
+
+	public void setMeanLinesChanged(double meanLinesChanged) {
+		this.meanLinesChanged = meanLinesChanged;
+	}
+
+	public void setMedianLinesChanged(double medianLinesChanged) {
+		this.medianLinesChanged = medianLinesChanged;
+	}
+
+	public int getExpActivity() {
+		return expActivity;
+	}
+
+	public void setExpActivity(int expActivity) {
+		this.expActivity = expActivity;
+	}
+
+	public double getREXPActivity() {
+		return REXPActivity;
+	}
+
+	public void setREXPActivity(double rEXPActivity) {
+		REXPActivity = rEXPActivity;
+	}
+
+	public int getExpReview() {
+		return expReview;
+	}
+
+	public void setExpReview(int expReview) {
+		this.expReview = expReview;
+	}
+
+	public double getREXPReview() {
+		return REXPReview;
+	}
+
+	public void setREXPReview(double rEXPReview) {
+		REXPReview = rEXPReview;
+	}
+
+	public String getNature() {
+		return nature;
+	}
+
+	public void setNature(String nature) {
+		this.nature = nature;
+	}
+
+	@Override
+	public String toString() {
+		return "UserInfo [hash=" + hash + ", login=" + login + ", buggy=" + buggy + ", commits=" + commits
+				+ ", meanCommits=" + meanCommits + ", medianCommits=" + medianCommits + ", commitFrequency="
+				+ commitFrequency + ", REXPCommit=" + REXPCommit + ", SEXPCommit=" + SEXPCommit + ", expActivity="
+				+ expActivity + ", REXPActivity=" + REXPActivity + ", expReview=" + expReview + ", REXPReview="
+				+ REXPReview + ", additions=" + additions + ", totalAdditions=" + totalAdditions + ", meanAdditions="
+				+ meanAdditions + ", medianAdditions=" + medianAdditions + ", deletions=" + deletions
+				+ ", totalDeletions=" + totalDeletions + ", meanDeletions=" + meanDeletions + ", medianDeletions="
+				+ medianDeletions + ", modifiedFiles=" + modifiedFiles + ", totalModifiedFiles=" + totalModifiedFiles
+				+ ", meanModifiedFiles=" + meanModifiedFiles + ", medianModifiedFiles=" + medianModifiedFiles
+				+ ", linesChanged=" + linesChanged + ", totalLinesChanged=" + totalLinesChanged + ", meanLinesChanged="
+				+ meanLinesChanged + ", medianLinesChanged=" + medianLinesChanged + ", buggyPercent=" + buggyPercent
+				+ ", nature=" + nature + ", emptyNatureCount=" + emptyNatureCount + ", managementCount="
+				+ managementCount + ", reengineeringCount=" + reengineeringCount + ", correctiveEngineeringCount="
+				+ correctiveEngineeringCount + ", forwardEngineeringCount=" + forwardEngineeringCount
+				+ ", uncategorizedCount=" + uncategorizedCount + ", emptyNaturePercent=" + emptyNaturePercent
+				+ ", managementPercent=" + managementPercent + ", reengineeringPercent=" + reengineeringPercent
+				+ ", correctiveEngineeringPercent=" + correctiveEngineeringPercent + ", forwardEngineeringPercent="
+				+ forwardEngineeringPercent + ", uncategorizedPercent=" + uncategorizedPercent + ", isEmptySize="
+				+ isEmptySize + ", isTiny=" + isTiny + ", isSmall=" + isSmall + ", isMedium=" + isMedium + ", isLarge="
+				+ isLarge + ", emptySizeCount=" + emptySizeCount + ", tinyCount=" + tinyCount + ", smallCount="
+				+ smallCount + ", mediumCount=" + mediumCount + ", largeCount=" + largeCount + ", emptySizePercent="
+				+ emptySizePercent + ", tinyPercent=" + tinyPercent + ", smallPercent=" + smallPercent
+				+ ", mediumPercent=" + mediumPercent + ", largePercent=" + largePercent + ", commitsPulls="
+				+ commitsPulls + ", activeDays=" + activeDays + ", timeOnProject=" + timeOnProject
+				+ ", numberIssueComments=" + numberIssueComments + ", numberPullComments=" + numberPullComments
+				+ ", numberCommitComments=" + numberCommitComments + ", numberOpenIssues=" + numberOpenIssues
+				+ ", numberClosedIssues=" + numberClosedIssues + ", pullRequestsMerged=" + pullRequestsMerged
+				+ ", percentPullRequestsMerged=" + percentPullRequestsMerged + ", numberOpenPullRequests="
+				+ numberOpenPullRequests + ", numberClosedPullRequests=" + numberClosedPullRequests
+				+ ", numberRequestedReviewer=" + numberRequestedReviewer + ", hasTests=" + hasTests + ", testsCount="
+				+ testsCount + ", insertionPoints=" + insertionPoints + ", testPresence=" + testPresence + "]";
+	}
+
+	public double getOwnership() {
+		return ownership;
+	}
+
+	public void setOwnership(double ownership) {
+		this.ownership = ownership;
+	}
+
+	public double getMedianOwnership() {
+		return medianOwnership;
+	}
+
+	public void setMedianOwnership(List<Double> medianOwnership) {
+
+		Util.sortList(medianOwnership);
+
+		if (medianOwnership.size() > 0) {
+			if (medianOwnership.size() % 2 == 0) {
+				this.medianOwnership = ((medianOwnership.get(medianOwnership.size() / 2)
+						+ medianOwnership.get(medianOwnership.size() / 2 - 1)) / 2);
+			} else {
+				this.medianOwnership = (medianOwnership.get(medianOwnership.size() / 2));
+			}
+		}
+
+	}
+
+	public void setRepositoryTime(String firstDate, String authorDate) {
+		repositoryTime = (Days.daysBetween(LocalDateTime.parse(firstDate), LocalDateTime.parse(authorDate)).getDays()
+				+ 1);
+
+	}
+
+	public int getRepositoryTime() {
+		return repositoryTime;
+	}
+
+	public int getPreviousInsertionPoints() {
+		return previousInsertionPoints;
+	}
+
+	public void setPreviousInsertionPoints(int previousInsertionPoints) {
+		this.previousInsertionPoints = previousInsertionPoints;
+	}
+
+	public double getPreviousBuggyPercent() {
+		return previousBuggyPercent;
+	}
+
+	public void setPreviousBuggyPercent(double previousBuggyPercent) {
+		this.previousBuggyPercent = previousBuggyPercent;
 	}
 
 }

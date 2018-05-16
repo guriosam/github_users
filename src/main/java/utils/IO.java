@@ -18,8 +18,8 @@ public class IO {
 		try {
 
 			File f = new File(filename);
-			
-			if(!f.exists()){
+
+			if (!f.exists()) {
 				return new ArrayList<>();
 			}
 
@@ -114,8 +114,12 @@ public class IO {
 
 			File[] files = f.listFiles();
 
-			for (File file : files) {
-				fileNames.add(file.getName());
+			if (files != null) {
+
+				for (File file : files) {
+					fileNames.add(file.getName());
+				}
+
 			}
 
 		} catch (Exception e) {

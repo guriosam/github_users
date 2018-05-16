@@ -1,8 +1,11 @@
 package generators;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -17,15 +20,23 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 
+import metrics.CommentsMetrics;
+import metrics.CommitMetrics;
+import metrics.IssuesMetrics;
+import metrics.NatureMetrics;
+import metrics.PullRequestsMetrics;
+import metrics.SizeMetrics;
+import objects.CommentDAO;
+import objects.CommitDAO;
 import objects.CommitInfo;
-import objects.CommitSize;
+import objects.IssueDAO;
 import objects.NatureCommit;
-import objects.UserComment;
+import objects.NatureDAO;
+import objects.PullRequestDAO;
+import objects.SizeDAO;
 import objects.UserCommit;
 import objects.UserInfo;
-import objects.UserIssue;
 import objects.UserPoint;
-import objects.UserPullRequest;
 import utils.IO;
 import utils.LocalPaths;
 import utils.Util;
@@ -35,12 +46,11 @@ public class Commits {
 	@SuppressWarnings("unchecked")
 	public static void analyzeCommits(String project, List<UserPoint> userPoints) {
 
-		List<String> buggyHashs = new ArrayList<>();
-		for (UserPoint up : userPoints) {
-			for (CommitInfo ci : up.getCommitInfo()) {
-				buggyHashs.add(ci.getHash());
-			}
-		}
+		/*
+		 * List<String> buggyHashs = new ArrayList<>(); for (UserPoint up :
+		 * userPoints) { for (CommitInfo ci : up.getCommitInfo()) {
+		 * buggyHashs.add(ci.getHash()); } }
+		 */
 
 		boolean approach = true;
 		boolean heuristics = true;
@@ -56,17 +66,52 @@ public class Commits {
 			System.out.println("** No Pulls **");
 		}
 
+		List<String> gitHashs = IO.readAnyFile(LocalPaths.PATH_GIT + project + "/hashs.txt");
+
+		String firstHash = gitHashs.get(gitHashs.size() - 1);
+
+		String firstDate = Util.getDate(project, firstHash);
+
 		List<UserInfo> jsonUsers = new ArrayList<>();
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
-		List<UserPullRequest> userPull = Issues.getPullRequests(project);
-
-		List<UserIssue> userIssues = Issues.readIssues(project);
-		boolean pull = false;
-		double countTotalMerged = 0.0;
 
 		HashSet<String> hashs = new HashSet<>();
-		List<String> pulls_merged = new ArrayList<>();
+
+		List<UserCommit> commits = readCommitsInfo(project);
+
+		HashMap<String, NatureDAO> natures = NatureMetrics.readNatureAnalysis(project);
+
+		HashMap<String, SizeDAO> sizes = SizeMetrics.readSizeAnalysis(project);
+
+		HashMap<String, IssueDAO> issues = IssuesMetrics.readIssuesAnalysis(project);
+
+		HashMap<String, CommentDAO> comments = CommentsMetrics.readCommentAnalysis(project);
+
+		HashMap<String, PullRequestDAO> pullRequests = PullRequestsMetrics.readPullRequestAnalysis(project);
+
+		List<String> ownership = IO.readAnyFile(Util.getMetricsPath(project) + "ownership.csv");
+
+		HashMap<String, Double> ownerships = new HashMap<>();
+
+		for (String owner : ownership) {
+			String[] line = owner.split(",");
+
+			String hash = line[0];
+			String user = line[1];
+			String date = line[2];
+			String value = line[3];
+			Double ownershipValue = Double.parseDouble(value);
+
+			ownerships.put(hash + "_" + user, ownershipValue);
+		}
+
+		double percentRun = 0;
+		double maxRun = 0;
+
+		for (UserPoint userPoint : userPoints) {
+			maxRun += userPoint.getCommitInfo().size();
+		}
+
+		DecimalFormat numberFormat = new DecimalFormat("0.00");
 
 		for (UserPoint userPoint : userPoints) {
 
@@ -75,125 +120,60 @@ public class Commits {
 			String user = userPoint.getName();
 			user = user.replace("\"", "");
 
-			if (user.equals("NA")) {
+			if (user.equals("NA") || user.equals("(no author)")) {
 				continue;
 			}
-			String lastDate = "";
 
-			if (approach) {
-				lastDate = userPoint.getCommitInfo().get(userPoint.getCommitInfo().size() - 1).getDate();
-			}
+			List<UserCommit> userCommits = new ArrayList<>();
+			HashSet<UserCommit> userCommitsSet = new HashSet<>();
 
-			List<UserCommit> userCommits = readAllCommitsOnFolder(project,
-					LocalPaths.PATH + project + "/users/" + user + "/commits/",
-					LocalPaths.PATH + project + "/users/" + user + "/commits/", user, lastDate, heuristics);
-
-
-			for (int i = 0; i < userCommits.size() - 1; i++) {
-				for (int j = i + 1; j < userCommits.size(); j++) {
-					if (!Util.checkPastDate(userCommits.get(i).getDate(), userCommits.get(j).getDate(), "-")) {
-						UserCommit uc = userCommits.get(i);
-						userCommits.set(i, userCommits.get(j));
-						userCommits.set(j, uc);
-					}
+			for (UserCommit u : commits) {
+				if (u.getAuthorLogin().equals(user)) {
+					userCommitsSet.add(u);
+				} else if (u.getAuthorName().equals(user)) {
+					userCommitsSet.add(u);
 				}
 			}
 
-			File f1 = new File(LocalPaths.PATH + project + "/users/" + user + "/pulls/commits/");
-
-			List<UserCommit> userPullCommits = new ArrayList<>();
-
-			if (withPulls) {
-				if (f1.exists()) {
-
-					userPullCommits = readAllCommitsOnFolder(project,
-							LocalPaths.PATH + project + "/users/" + user + "/pulls/",
-							LocalPaths.PATH + project + "/users/" + user + "/pulls/commits/", user, lastDate,
-							heuristics);
-
-					// System.out.println(userPullCommits.size());
-
-					for (int i = 0; i < userPullCommits.size() - 1; i++) {
-						for (int j = i + 1; j < userPullCommits.size(); j++) {
-							if (!Util.checkPastDate(userPullCommits.get(i).getDate(), userPullCommits.get(j).getDate(),
-									"-")) {
-								UserCommit uc = userPullCommits.get(i);
-								userPullCommits.set(i, userPullCommits.get(j));
-								userPullCommits.set(j, uc);
-							}
-						}
-					}
-					pull = true;
-				}
+			for (UserCommit u : userCommitsSet) {
+				userCommits.add(u);
 			}
 
-			if (!heuristics) {
-				userCommits = removeHashs(project, user, userCommits);
-				userPullCommits = removeHashs(project, user, userPullCommits);
-			}
+			userCommits = Util.orderCommits(userCommits);
 
-			List<UserCommit> hashPull = new ArrayList<>();
-
-			for (UserCommit uc : userCommits) {
-				for (UserCommit ucp : userPullCommits) {
-					if (uc.getSha().equals(ucp.getSha())) {
-						hashPull.add(uc);
-					}
-				}
-			}
-
-			for (UserCommit hashP : hashPull) {
-				userCommits.remove(hashP);
-			}
-
-			HashSet<String> dates = new HashSet<>();
-
-			HashMap<Integer, Integer> weeks = new HashMap<>();
-
-			List<Double> additions = new ArrayList<>();
-
-			List<Double> deletions = new ArrayList<>();
-
-			List<Double> linesChanged = new ArrayList<>();
-
-			// Nature
-			double emptyNatureTotal = 0;
-			double managementTotal = 0;
-			double reengineeringTotal = 0;
-			double correctiveEngineeringTotal = 0;
-			double forwardEngineeringTotal = 0;
-			double uncategorizedTotal = 0;
-
-			double emptySizeTotal = 0;
-			double tinyTotal = 0;
-			double smallTotal = 0;
-			double mediumTotal = 0;
-			double largeTotal = 0;
-
-			List<Integer> files = new ArrayList<>();
+			CommitMetrics commitMetrics = new CommitMetrics();
 
 			HashMap<String, Integer> commitsPerDay = new HashMap<>();
 
-			List<String> usedHashs = new ArrayList<>();
-			List<String> usedHashsPulls = new ArrayList<>();
+			HashSet<String> usedHashs = new HashSet<>();
 
-			// for (UserCommit uc : userCommits) {
-			// hashs.add(uc.getSha());
-			// }
-			int insertion = 1;
-			List<String> countTests = new ArrayList<>();
+			int insertion = 0;
+			List<Integer> countTests = new ArrayList<>();
 			double commitsWithTests = 0;
-			double c = 0;
+
+			// Gson gson2 = new GsonBuilder().setPrettyPrinting().create();
+			// String o = gson2.toJson(userCommits);
+
+			// Util.checkDirectory(Util.getCommitsPath(project) +
+			// "user_commits/");
+			// IO.writeAnyString(Util.getCommitsPath(project) + "user_commits/"
+			// + user + ".json", o);
+
+			List<Double> userOwnerships = new ArrayList<>();
+
 			for (CommitInfo cm : userPoint.getCommitInfo()) {
 
+				percentRun++;
 
-				if (!approach) {
-					cm = userPoint.getCommitInfo().get(userPoint.getCommitInfo().size() - 1);
-				}
+				System.out.println(numberFormat.format((percentRun / maxRun) * 100) + "%");
 
-				System.out.println("Insertion point " + insertion + "/" + userPoint.getCommitInfo().size());
+				// System.out.println("Insertion point " + insertion + "/" +
+				// userPoint.getCommitInfo().size());
 
 				String hash = cm.getHash();
+
+				commitMetrics.setCurrentHash(hash);
+				commitMetrics.setCurrentSubSystem(new ArrayList<String>());
 
 				String authorDate = "";
 				if (approach) {
@@ -201,69 +181,102 @@ public class Commits {
 					authorDate = authorDate.replace("\"", "");
 				}
 
-				HashMap<String, UserComment> userCount = Issues.readComments(project, user, authorDate);
-				HashMap<String, UserComment> userPullsCommentCount = PullRequests.readComments(project, user,
-						authorDate);
-				HashMap<String, UserComment> userCommitCommentCount = Comments.readCommitComments(project, user,
-						authorDate);
+				if (userCommits.size() > 0) {
 
-				if (userCommits.size() > 0 || userPullCommits.size() > 0) {
+					double expRecentComment = CommentsMetrics.getRecentExperience(comments, user, authorDate);
+					double expRecentPull = PullRequestsMetrics.getRecentExperience(pullRequests, user, authorDate);
+					double expRecentIssue = IssuesMetrics.getRecentExperience(issues, user, authorDate);
+
+					double recentActivityEXP = 0.0;
+					double recentReviewEXP = 0.0;
+
+					recentActivityEXP += expRecentComment;
+					recentActivityEXP += expRecentIssue;
+					recentActivityEXP += expRecentPull;
+
+					recentReviewEXP += recentActivityEXP;
 
 					String minimumDate = "";
 					if (userCommits.size() > 0) {
 						minimumDate = userCommits.get(0).getDate();
-					} else {
-						minimumDate = userPullCommits.get(0).getDate();
 					}
 					minimumDate = minimumDate.substring(0, minimumDate.indexOf("T"));
 					String maximumDate = DateTime.now(DateTimeZone.UTC).toString();
-					if (approach) {
-						maximumDate = authorDate;
-					}
-
-					CommitSize cs = new CommitSize();
-					NatureCommit nc = new NatureCommit();
+					maximumDate = authorDate;
 
 					maximumDate = maximumDate.substring(0, maximumDate.indexOf("T"));
 
-					readUserCommitInfo(project, gson, userCommits, minimumDate, maximumDate, dates, weeks, additions,
-							deletions, linesChanged, files, commitsPerDay, authorDate, usedHashs, usedHashsPulls,
-							countTests, cs, nc, false);
-
-					if (pull) {
-						readUserCommitInfo(project, gson, userPullCommits, minimumDate, maximumDate, dates, weeks,
-								additions, deletions, linesChanged, files, commitsPerDay, authorDate, usedHashs,
-								usedHashsPulls, countTests, cs, nc, true);
-					}
+					readUserCommitInfo(project, userCommits, minimumDate, maximumDate, commitMetrics, commitsPerDay,
+							authorDate, usedHashs, countTests, user);
 
 					List<Date> commitDates = Util.orderDates(commitsPerDay);
 
 					List<Integer> orderedDates = Util.iterateDates(commitsPerDay, commitDates);
 
-					double adds = Util.getSumDouble(additions);
-					double lchanged = Util.getSumDouble(linesChanged);
-					double rems = Util.getSumDouble(deletions);
-					double lines = adds + rems;
-					double file = (double) Util.getSumInt(files);
+					String frequency = Util.calculateCommitFrequency(userCommits, hash);
 
-					List<String> w = new ArrayList<>();
+					double rEXPCommit = Util.calculateREXPCommit(userPoint, hash);
 
-					// for (Integer i : weeks.keySet()) {
-					// w.add(i + ":" + weeks.get(i) + "");
-					// }
+					recentActivityEXP += rEXPCommit;
 
 					UserInfo userInfo = new UserInfo();
-					int userCommitsSize = 0;
+					int userCommitsSize = usedHashs.size();
 
-					// if (approach) {
-					userCommitsSize = usedHashs.size() + usedHashsPulls.size();
-					userInfo.setCommitsPulls(usedHashsPulls.size());
+					userInfo.setREXP(rEXPCommit);
+
+					if (userCommitsSize > 0) {
+						double ucs = userCommitsSize;
+						if(ucs == 0){
+							ucs = 1;
+						}
+						
+						double percent = (double) ((double) insertion / (double) ucs);
+						userInfo.setPreviousBuggyPercent(percent);
+					} else {
+						userInfo.setBuggyPercent(0.0);
+					}
+
+					userInfo.setPreviousInsertionPoints(insertion);
+
+					if (cm.isBuggy()) {
+						insertion++;
+					}
+
+					userInfo.setSEXP(commitMetrics.getSEXP());
+
+					userInfo.setREXPActivity(recentActivityEXP);
+					userInfo.setREXPReview(recentReviewEXP);
+
+					if (ownerships.containsKey(hash + "_" + user)) {
+						double d = ownerships.get(hash + "_" + user);
+						userOwnerships.add(d);
+						userInfo.setOwnership(d);
+						userInfo.setMedianOwnership(userOwnerships);
+					} else {
+						System.out.println("Not contains ownership: " + user + ": " + hash);
+					}
+
+					int pullSize = 0;
+					UserCommit u = null;
+					for (UserCommit userCommit : userCommits) {
+						if (userCommit.getSha().equals(hash)) {
+
+							userInfo.setAdditions(userCommit.getAdditions());
+							userInfo.setDeletions(userCommit.getDeletions());
+							userInfo.setLinesChanged(userCommit.getLinesChanged());
+							userInfo.setModifiedFiles(userCommit.getModifiedFiles());
+
+						}
+						if (usedHashs.contains(userCommit.getSha())) {
+							if (userCommit.isPullCommit()) {
+								pullSize++;
+							}
+						}
+					}
+
+					userInfo.setCommitsPulls(pullSize);
 					userInfo.setHash(hash);
-					// } else {
-					// userCommitsSize = userCommits.size() +
-					// userPullCommits.size();
-					// userInfo.setCommitsPulls(userPullCommits.size());
-					// }
+					userInfo.setCommitFrequency(frequency);
 
 					userInfo.setBuggy(cm.isBuggy());
 
@@ -272,94 +285,115 @@ public class Commits {
 					userInfo.setMeanCommits(minimumDate, maximumDate);
 					userInfo.setMedianCommits(orderedDates);
 
-					userInfo.setAdditions(adds);
-					userInfo.setMeanAdditions(additions);
-					userInfo.setMedianAdditions(additions);
+					commitMetrics.setMetrics(userInfo);
 
-					userInfo.setLinesChanged(lchanged);
-					userInfo.setMeanLinesChanged(linesChanged);
-					userInfo.setMedianLinesChanged(linesChanged);
-
-					userInfo.setDeletions(rems);
-					userInfo.setMeanDeletions(deletions);
-					userInfo.setMedianDeletions(deletions);
-
-					userInfo.setModifiedFiles(file);
-					userInfo.setMeanModifiedFiles(files);
-					userInfo.setMedianModifiedFiles(files);
-
-					emptySizeTotal += cs.getEmptyCount();
-					userInfo.setEmptySizeCount((int) emptySizeTotal);
-					tinyTotal += cs.getTinyCount();
-					userInfo.setTinyCount((int) tinyTotal);
-					smallTotal += cs.getSmallCount();
-					userInfo.setSmallCount((int) smallTotal);
-					mediumTotal += cs.getMediumCount();
-					userInfo.setMediumCount((int) mediumTotal);
-					largeTotal += cs.getLargeCount();
-					userInfo.setLargeCount((int) largeTotal);
-
-					double totalSize = emptySizeTotal + tinyTotal + smallTotal + mediumTotal + largeTotal;
-
-					if(totalSize == 0){
-						totalSize = 1;
-					}
-					
-					userInfo.setEmptySizePercent(emptySizeTotal / totalSize);
-					userInfo.setTinyPercent(tinyTotal / totalSize);
-					userInfo.setSmallPercent(smallTotal / totalSize);
-					userInfo.setMediumPercent(mediumTotal / totalSize);
-					userInfo.setLargePercent(largeTotal / totalSize);
-
-					emptyNatureTotal += nc.getEmptyCount();
-					userInfo.setEmptyNatureCount((int) emptyNatureTotal);
-					forwardEngineeringTotal += nc.getForwardEngineeringCount();
-					userInfo.setForwardEngineeringCount((int) forwardEngineeringTotal);
-					correctiveEngineeringTotal += nc.getCorrectiveEngineeringCount();
-					userInfo.setCorrectiveEngineeringCount((int) correctiveEngineeringTotal);
-					reengineeringTotal += nc.getReengineeringCount();
-					userInfo.setReengineeringCount((int) reengineeringTotal);
-					uncategorizedTotal += nc.getUncategorizedCount();
-					userInfo.setUncategorizedCount((int) uncategorizedTotal);
-					managementTotal += nc.getManagementCount();
-					userInfo.setManagementCount((int) managementTotal);
-
-					double totalNature = emptyNatureTotal + forwardEngineeringTotal + correctiveEngineeringTotal
-							+ reengineeringTotal + uncategorizedTotal + managementTotal;
-					
-					if(totalNature == 0){
-						totalNature = 1;
+					if (natures.containsKey(hash)) {
+						NatureDAO nature = natures.get(hash);
+						NatureMetrics.setUserInfo(nature, userInfo);
+					} else {
+						System.out.println("Nature hash:" + hash + " not found!");
 					}
 
-					userInfo.setEmptyNaturePercent(emptyNatureTotal / totalNature);
-					userInfo.setForwardEngineeringPercent(forwardEngineeringTotal / totalNature);
-					userInfo.setCorrectiveEngineeringPercent(correctiveEngineeringTotal / totalNature);
-					userInfo.setReengineeringPercent(reengineeringTotal / totalNature);
-					userInfo.setUncategorizedPercent(uncategorizedTotal / totalNature);
-					userInfo.setManagementPercent(managementTotal / totalNature);
+					if (sizes.containsKey(hash)) {
+						SizeDAO size = sizes.get(hash);
+						SizeMetrics.setUserInfo(size, userInfo);
+					} else {
+						System.out.println("Size hash:" + hash + " not found!");
+					}
+
+					int activityEXP = 0;
+					int codeReviewEXP = 0;
+
+					activityEXP += userCommitsSize;
+
+					if (comments.containsKey(hash)) {
+						CommentDAO comment = comments.get(hash);
+
+						userInfo.setNumberCommitComments(comment.getCommitCommentCount());
+						userInfo.setNumberIssueComments(comment.getIssueCommentCount());
+						userInfo.setNumberPullComments(comment.getPullCommentCount());
+
+						activityEXP += comment.getCommitCommentCount();
+						activityEXP += comment.getIssueCommentCount();
+						activityEXP += comment.getPullCommentCount();
+
+						codeReviewEXP += comment.getCommitCommentCount();
+						codeReviewEXP += comment.getIssueCommentCount();
+						codeReviewEXP += comment.getPullCommentCount();
+
+					} else {
+						System.out.println("Comment hash:" + hash + " not found!");
+					}
+
+					if (pullRequests.containsKey(hash)) {
+						PullRequestDAO pullDAO = pullRequests.get(hash);
+
+						userInfo.setNumberOpenPullRequests(pullDAO.getCountOpened());
+						userInfo.setNumberClosedPullRequests(pullDAO.getCountClosed());
+						userInfo.setPullRequestsMerged(pullDAO.getCountMerged());
+						userInfo.setPercentPullRequestsMerged(pullDAO.getOpenMerged());
+						userInfo.setNumberRequestedReviewer(pullDAO.getCountRequested());
+
+						activityEXP += pullDAO.getCountOpened();
+						activityEXP += pullDAO.getCountClosed();
+
+						codeReviewEXP += pullDAO.getCountOpened();
+						codeReviewEXP += pullDAO.getCountClosed();
+
+					} else {
+						System.out.println("Pull Request hash:" + hash + " not found!");
+					}
+
+					if (issues.containsKey(hash)) {
+						IssueDAO issueDAO = issues.get(hash);
+
+						userInfo.setNumberOpenIssues(issueDAO.getCountOpened());
+						userInfo.setNumberClosedIssues(issueDAO.getCountClosed());
+
+						activityEXP += issueDAO.getCountClosed();
+						activityEXP += issueDAO.getCountOpened();
+
+						codeReviewEXP += issueDAO.getCountClosed();
+						codeReviewEXP += issueDAO.getCountOpened();
+
+					} else {
+						System.out.println("Issue hash:" + hash + " not found!");
+					}
 
 					if (countTests.size() > 0) {
-						userInfo.setInsertionTests(true);
 						commitsWithTests++;
-					} else {
-						userInfo.setInsertionTests(false);
 					}
+
+					for (UserCommit uc : userCommits) {
+						if (uc.getSha().equals(hash)) {
+							if (uc.hasTestInclusion()) {
+								userInfo.setInsertionTests(true);
+							}
+							break;
+						}
+					}
+
+					userInfo.setExpActivity(activityEXP);
+					userInfo.setExpReview(codeReviewEXP);
+
 					userInfo.setInsertionTestsCount(countTests.size());
-					c++;
+
 					if (userCommitsSize > 0) {
-						double percent = (double) insertion / userCommitsSize;
+						double percent = (double) ((double) insertion / (double) userCommitsSize);
 						userInfo.setBuggyPercent(percent);
 					} else {
 						userInfo.setBuggyPercent(0.0);
 					}
 
-					userInfo.setTestPresence((double) (commitsWithTests / c));
-
-					userInfo.setActiveDays(dates.size());
+					if (user.contains("cdberry")) {
+						System.out.println(commitsWithTests);
+						System.out.println(userCommitsSize);
+					}
+					userInfo.setTestPresence((double) (commitsWithTests / userCommitsSize));
 
 					List<String> datesToOrder = new ArrayList<>();
 
-					for (String date : dates) {
+					for (String date : commitMetrics.getDates()) {
 
 						String[] d1 = date.split("/");
 
@@ -372,155 +406,12 @@ public class Commits {
 						datesToOrder.add(day1 + "-" + m1 + "-" + year1);
 					}
 
-					if (approach) {
-						maximumDate = authorDate;// DateTime.now(DateTimeZone.UTC).toString();
-					} else {
-						maximumDate = DateTime.now(DateTimeZone.UTC).toString();
-						userInfo.setInsertionPoints(userPoint.getCommitInfo().size());
-					}
-					maximumDate = maximumDate.substring(0, maximumDate.indexOf("T"));
-
-					userInfo.setTimeOnProject(datesToOrder, maximumDate);
+					userInfo.setTimeOnProject(minimumDate, maximumDate);
+					userInfo.setRepositoryTime(firstDate, maximumDate);
 					// userInfo.setWeeks(w);
 					userInfo.setLogin(user);
 
-					double countOpened = 0.0;
-					double countMerged = 0.0;
-					double openMerged = 0.0;
-
-					for (UserPullRequest upr : userPull) {
-
-						boolean m = false;
-						if (approach) {
-							if (upr.isMerged() && upr.getClosed_at() != null) {
-								if (!Util.checkPastDate(upr.getClosed_at(), authorDate, "-")) {
-									continue;
-								}
-							} else {
-
-								if (!Util.checkPastDate(upr.getCreated_at(), authorDate, "-")) {
-									continue;
-								}
-							}
-						}
-
-						if (upr.getUser() != null) {
-							if (upr.getUser().equals(user)) {
-								int o = userInfo.getNumberOpenPullRequests();
-								o++;
-								userInfo.setNumberOpenPullRequests(o);
-								countOpened++;
-								m = true;
-							}
-
-						}
-						if (upr.getMerged_by() != null) {
-							if (upr.getMerged_by().equals(user)) {
-								int o = userInfo.getNumberClosedPullRequests();
-								o++;
-								userInfo.setNumberClosedPullRequests(o);
-
-							}
-						}
-
-						if (upr.isMerged()) {
-							if (m) {
-								pulls_merged.add(upr.getId());
-								countMerged++;
-								countTotalMerged++;
-							}
-						}
-
-						if (upr.getReviewers() != null) {
-							for (String rev : upr.getReviewers()) {
-								if (rev.equals(user)) {
-									int o = userInfo.getNumberRequestedReviewer();
-									o++;
-									userInfo.setNumberRequestedReviewer(o);
-								}
-							}
-
-						}
-					}
-
-					// userInfo.setInsertionPoints(Integer.valueOf(insertionPoints));
-
-					if (countOpened != 0.0) {
-						openMerged = countMerged / countOpened;
-					}
-
-					userInfo.setPercentPullRequestsMerged(openMerged);
-
-					userInfo.setPullRequestsMerged(countMerged);
-
-					if (userCount.containsKey(user)) {
-						if (approach) {
-							if (Util.checkPastDate(userCount.get(user).getCreated_at(), authorDate, "-")) {
-								userInfo.setNumberIssueComments(userCount.get(user).getCount());
-							} else {
-								userInfo.setNumberIssueComments(0);
-							}
-						} else {
-							userInfo.setNumberIssueComments(userCount.get(user).getCount());
-						}
-
-					}
-
-					if (userPullsCommentCount.containsKey(user)) {
-						if (approach) {
-							if (Util.checkPastDate(userPullsCommentCount.get(user).getCreated_at(), authorDate, "-")) {
-								userInfo.setNumberPullComments(userPullsCommentCount.get(user).getCount());
-							} else {
-								userInfo.setNumberPullComments(0);
-							}
-						} else {
-							userInfo.setNumberPullComments(userPullsCommentCount.get(user).getCount());
-						}
-
-					}
-
-					if (userCommitCommentCount.containsKey(user)) {
-						if (approach) {
-							if (Util.checkPastDate(userCommitCommentCount.get(user).getCreated_at(), authorDate, "-")) {
-								userInfo.setNumberCommitComments(userCommitCommentCount.get(user).getCount());
-							} else {
-								userInfo.setNumberCommitComments(0);
-							}
-						} else {
-							userInfo.setNumberCommitComments(userCommitCommentCount.get(user).getCount());
-						}
-
-					}
-
-					for (UserIssue ui : userIssues) {
-
-						if (ui.getClosedBy().equals(user)) {
-
-							if (approach) {
-								if (!Util.checkPastDate(ui.getClosedAt(), authorDate, "-")) {
-									continue;
-								}
-							}
-
-							int o = userInfo.getNumberClosedIssues();
-							o++;
-							userInfo.setNumberClosedIssues(o);
-						}
-
-						if (ui.getCreator().equals(user)) {
-
-							if (approach) {
-								if (!Util.checkPastDate(ui.getCreatedAt(), authorDate, "-")) {
-									continue;
-								}
-							}
-
-							int o = userInfo.getNumberOpenIssues();
-							o++;
-							userInfo.setNumberOpenIssues(o);
-						}
-
-					}
+					userInfo.setInsertionPoints(insertion);
 
 					if (!jsonUsers.contains(userInfo)) {
 						jsonUsers.add(userInfo);
@@ -528,12 +419,7 @@ public class Commits {
 
 				} else {
 					System.out.println("Zero commits: " + userCommits.size());
-				}
-				if (approach) {
-					insertion++;
-
-					hashs.addAll(usedHashs);
-					hashs.addAll(usedHashsPulls);
+					System.out.println(cm.getHash());
 				}
 
 				if (!approach) {
@@ -546,11 +432,13 @@ public class Commits {
 
 		try {
 
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
 			String output = gson.toJson(jsonUsers);
 
 			String pathOut = LocalPaths.PATH + project + "/users_" + project + "_with";
 
-			if (pull) {
+			if (withPulls) {
 				pathOut += "_pull";
 
 				if (heuristics) {
@@ -575,11 +463,8 @@ public class Commits {
 				}
 			}
 
-			if (pull) {
-				IO.writeAnyFile(LocalPaths.PATH + project + "/total_pulls_merged_" + project + ".json", pulls_merged);
-			}
-
 			IO.writeAnyString(pathOut, output);
+
 			if (approach) {
 				List<String> htc = new ArrayList<>();
 				htc.addAll(hashs);
@@ -656,7 +541,7 @@ public class Commits {
 				List<LinkedTreeMap> commits = gson.fromJson(fileData, List.class);
 
 				for (LinkedTreeMap c : commits) {
-					readSingleCommit(userCommits, c, user, "", false);
+					readSingleCommit(userCommits, c, user, "");
 				}
 
 			} catch (Exception e) {
@@ -679,7 +564,7 @@ public class Commits {
 	// Read all commit files on folder
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static List<UserCommit> readAllCommitsOnFolder(String project, String pathInput, String pathOutput,
-			String user, String authorDate, boolean heuristics) {
+			String user, String authorDate) {
 
 		try {
 
@@ -687,13 +572,13 @@ public class Commits {
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
 			List<String> files = new ArrayList<>();
-			List<String> userCommits2 = new ArrayList<>();
 
 			boolean pulls = false;
 
 			if (pathInput.equals(pathOutput)) {
 				files = IO.filesOnFolder(pathInput);
-				userCommits2 = IO.readAnyFile(Util.getUserPath(project, user) + "pulls/commits_hashs.txt");
+				// userCommits2 = IO.readAnyFile(Util.getUserPath(project, user)
+				// + "pulls/commits_hashs.txt");
 
 			} else {
 				files = IO.readAnyFile(pathInput + "commits_hashs.txt");
@@ -726,7 +611,7 @@ public class Commits {
 
 					LinkedTreeMap c = gson.fromJson(fileData, LinkedTreeMap.class);
 
-					userCommits = readSingleCommit(userCommits, c, user, authorDate, heuristics);
+					userCommits = readSingleCommit(userCommits, c, user, authorDate);
 
 					String output = gson.toJson(userCommits);
 
@@ -737,18 +622,6 @@ public class Commits {
 				}
 
 			}
-
-			// List<UserCommit> uc2 = new ArrayList<>();
-
-			/*
-			 * if (!pulls) { for (UserCommit u : userCommits) { boolean a =
-			 * false; for (String h : userCommits2) { if (u.getSha().equals(h))
-			 * { a = true; } }
-			 * 
-			 * if (a) { uc2.add(u); } }
-			 * 
-			 * for (UserCommit uc : uc2) { userCommits.remove(uc); } }
-			 */
 
 			return userCommits;
 
@@ -762,83 +635,9 @@ public class Commits {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static List<UserCommit> readSingleCommit(List<UserCommit> userCommits, LinkedTreeMap c, String user,
-			String authorDate, boolean heuristics) {
+			String authorDate) {
 
 		UserCommit uc = new UserCommit();
-
-		List<String> foward = new ArrayList<>();
-		foward.add("implement");
-		foward.add("add");
-		foward.add("request");
-		foward.add("new");
-		foward.add("test");
-		foward.add("start");
-		foward.add("includ");
-		foward.add("initial");
-		foward.add("introduc");
-		foward.add("creat");
-		foward.add("increas");
-
-		List<String> reeg = new ArrayList<>();
-
-		reeg.add("optimiz");
-		reeg.add("ajdust");
-		reeg.add("update");
-		reeg.add("delet");
-		reeg.add("remov");
-		reeg.add("chang");
-		reeg.add("refactor");
-		reeg.add("replac");
-		reeg.add("modif");
-		reeg.add("is now");
-		reeg.add("are now");
-		reeg.add("enhance");
-		reeg.add("improv");
-		reeg.add("design change");
-		reeg.add("renam");
-		reeg.add("eliminat");
-		reeg.add("duplicat");
-		reeg.add("restrutur");
-		reeg.add("simplif");
-		reeg.add("obsolete");
-		reeg.add("rearrang");
-		reeg.add("miss");
-		reeg.add("enhanc");
-		reeg.add("improv");
-
-		List<String> correct = new ArrayList<>();
-
-		correct.add("bug");
-		correct.add("fix");
-		correct.add("issue");
-		correct.add("error");
-		correct.add("correct");
-		correct.add("proper");
-		correct.add("deprecat");
-		correct.add("broke");
-
-		List<String> management = new ArrayList<>();
-
-		management.add("clean");
-		management.add("license");
-		management.add("merge");
-		management.add("release");
-		management.add("structure");
-		management.add("integrat");
-		management.add("copyright");
-		management.add("documentation");
-		management.add("manual");
-		management.add("javadoc");
-		management.add("comment");
-		management.add("migrat");
-		management.add("repository");
-		management.add("code review");
-		management.add("polish");
-		management.add("upgrade");
-		management.add("style");
-		management.add("formatting");
-		management.add("organiz");
-		management.add("TODO");
 
 		if (c.containsKey("commit")) {
 			LinkedTreeMap<String, ?> commit = (LinkedTreeMap) c.get("commit");
@@ -861,11 +660,17 @@ public class Commits {
 				}
 
 				if (login.equals("")) {
+					login = name;
+				}
+
+				if (login.equals("")) {
+					System.out.println(user + ": empty userCommits");
 					return userCommits;
 				}
 
 				if (!user.equals("")) {
 					if (!user.equals(login)) {
+						System.out.println(user + ": different user-login - " + login);
 						return userCommits;
 					}
 				}
@@ -902,7 +707,7 @@ public class Commits {
 
 						boolean b = true;
 
-						for (String mana : management) {
+						for (String mana : NatureCommit.getNatureList("management")) {
 							if (patch.contains(mana)) {
 								classification = "Management";
 								b = false;
@@ -911,7 +716,7 @@ public class Commits {
 						}
 
 						if (b) {
-							for (String re : reeg) {
+							for (String re : NatureCommit.getNatureList("reeg")) {
 								if (patch.contains(re)) {
 									classification = "Reengineering";
 									b = false;
@@ -920,7 +725,7 @@ public class Commits {
 							}
 						}
 						if (b) {
-							for (String co : correct) {
+							for (String co : NatureCommit.getNatureList("correct")) {
 								if (patch.contains(co)) {
 									classification = "Corrective Engineering";
 									b = false;
@@ -930,7 +735,7 @@ public class Commits {
 
 						}
 						if (b) {
-							for (String fo : foward) {
+							for (String fo : NatureCommit.getNatureList("foward")) {
 								if (patch.contains(fo)) {
 									classification = "Forward Engineering";
 									b = false;
@@ -945,7 +750,7 @@ public class Commits {
 
 					}
 
-					uc.setClassification(classification);
+					uc.setNatureClassification(classification);
 
 				}
 
@@ -982,41 +787,34 @@ public class Commits {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes", "static-access" })
-	private static void readUserCommitInfo(String project, Gson gson, List<UserCommit> userCommits, String minimumDate,
-			String maximumDate, HashSet<String> dates, HashMap<Integer, Integer> weeks, List<Double> additions,
-			List<Double> deletions, List<Double> linesChanged, List<Integer> files,
-			HashMap<String, Integer> commitsPerDay, String authorDate, List<String> usedHashs,
-			List<String> usedHashsPulls, List<String> countTests, CommitSize cs, NatureCommit nc, boolean pull) {
+	private static void readUserCommitInfo(String project, List<UserCommit> userCommits, String minimumDate,
+			String maximumDate, CommitMetrics commitMetrics, HashMap<String, Integer> commitsPerDay, String authorDate,
+			HashSet<String> usedHashs, List<Integer> countTests, String user) {
 		// TODO Auto-generated method stub
-
-		int empty = 0;
-		int tiny = 0;
-		int small = 0;
-		int medium = 0;
-		int large = 0;
-
-		int emptyCount = 0;
-		int managementCount = 0;
-		int reengineeringCount = 0;
-		int correctiveEngineeringCount = 0;
-		int forwardEngineeringCount = 0;
-		int uncategorizedCount = 0;
 
 		for (UserCommit uc : userCommits) {
 
+			if (uc.getAuthorLogin() != null) {
+				if (!uc.getAuthorLogin().equals(user)) {
+					if (uc.getAuthorName() != null) {
+						if (!uc.getAuthorName().equals(user)) {
+							continue;
+						}
+					}
+				}
+			}
+
 			if (!authorDate.equals("")) {
+
 				if (!Util.checkPastDate(uc.getDate(), authorDate, "-")) {
 					continue;
 				}
 
-				if (usedHashs.contains(uc.getSha()) || usedHashsPulls.contains(uc.getSha())) {
+				if (usedHashs.contains(uc.getSha())) {
 					continue;
 				} else {
-					if (pull) {
-						usedHashsPulls.add(uc.getSha());
-					} else {
-						usedHashs.add(uc.getSha());
-					}
+
+					usedHashs.add(uc.getSha());
 				}
 
 			}
@@ -1025,24 +823,7 @@ public class Commits {
 			// System.out.println("Hashs Size Pull: " + usedHashsPulls.size());
 
 			if (uc.hasTestInclusion()) {
-				countTests.add("");
-			}
-
-			if (uc.getClassification() != null) {
-
-				if (uc.getClassification().equals("Empty")) {
-					emptyCount++;
-				} else if (uc.getClassification().equals("Management")) {
-					managementCount++;
-				} else if (uc.getClassification().equals("Reengineering")) {
-					reengineeringCount++;
-				} else if (uc.getClassification().equals("Corrective Engineering")) {
-					correctiveEngineeringCount++;
-				} else if (uc.getClassification().equals("Forward Engineering")) {
-					forwardEngineeringCount++;
-				} else if (uc.getClassification().equals("Uncategorized")) {
-					uncategorizedCount++;
-				}
+				countTests.add(1);
 			}
 
 			DateTime dt = new DateTime(DateTimeZone.UTC);
@@ -1056,8 +837,8 @@ public class Commits {
 				maximum = dt.parse(maximumDate).getMillis();
 			} catch (Exception e) {
 				date = ldt.parse(uc.getDate().replace("Z", "")).getMillisOfDay();
-				minimum = ldt.parse(minimumDate).getMillisOfDay();
-				maximum = ldt.parse(maximumDate).getMillisOfDay();
+				minimum = ldt.parse(minimumDate.replace("Z", "")).getMillisOfDay();
+				maximum = ldt.parse(maximumDate.replace("Z", "")).getMillisOfDay();
 			}
 
 			if (uc.getDate().contains("T")) {
@@ -1075,7 +856,7 @@ public class Commits {
 			}
 
 			DateTime d = dt.parse(uc.getDate());
-			dates.add(d.getDayOfMonth() + "/" + d.getMonthOfYear() + "/" + d.getYear());
+			commitMetrics.getDates().add(d.getDayOfMonth() + "/" + d.getMonthOfYear() + "/" + d.getYear());
 
 			if (date < minimum) {
 				minimum = date;
@@ -1086,82 +867,44 @@ public class Commits {
 				maximumDate = uc.getDate();
 			}
 
-			int week = d.getWeekOfWeekyear();
-
-			if (weeks.containsKey(week)) {
-				int count = weeks.get(week);
-				count++;
-				weeks.replace(week, count);
-			} else {
-				weeks.put(week, 1);
-			}
+			/*
+			 * int week = d.getWeekOfWeekyear();
+			 * 
+			 * if (commitMetrics.getWeeks().containsKey(week)) { int count =
+			 * commitMetrics.getWeeks().get(week); count++;
+			 * commitMetrics.getWeeks().replace(week, count); } else {
+			 * commitMetrics.getWeeks().put(week, 1); }
+			 */
 
 			try {
 
-				String path = "";
+				double lineChanged = 0;
+				commitMetrics.getAdditions().add(uc.getAdditions());
+				lineChanged += uc.getAdditions();
 
-				if (pull) {
+				commitMetrics.getDeletions().add(uc.getDeletions());
+				lineChanged += uc.getDeletions();
 
-					path = LocalPaths.PATH + project + "/users/" + uc.getAuthorLogin() + "/pulls/commits/" + uc.getSha()
-							+ ".json";
+				commitMetrics.getLinesChanged().add(lineChanged);
 
-				} else {
+				commitMetrics.getFiles().add(uc.getFiles().size());
 
-					path = LocalPaths.PATH + project + "/users/" + uc.getAuthorLogin() + "/commits/" + uc.getSha()
-							+ ".json";
-				}
+				String hash = uc.getSha();
 
-				File f = new File(path);
+				for (String subSystem : uc.getFiles()) {
 
-				if (!f.exists()) {
-					continue;
-				}
-
-				String fileData = new String(Files.readAllBytes(Paths.get(path)));
-
-				LinkedTreeMap<String, ?> commit = gson.fromJson(fileData, LinkedTreeMap.class);
-
-				if (commit == null) {
-					continue;
-				}
-
-				if (commit.containsKey("stats")) {
-					LinkedTreeMap<String, Double> stats = (LinkedTreeMap<String, Double>) commit.get("stats");
-
-					double lineChanged = 0;
-					if (stats.containsKey("additions")) {
-						Double addition = stats.get("additions");
-						additions.add(addition);
-						lineChanged += addition;
-					}
-
-					if (stats.containsKey("deletions")) {
-						Double deletion = stats.get("deletions");
-						deletions.add(deletion);
-						lineChanged += deletion;
-					}
-
-					linesChanged.add(lineChanged);
-
-					if (commit.containsKey("files")) {
-
-						List file = (ArrayList) commit.get("files");
-
-						if (file.size() == 0) {
-							empty++;
-						} else if (file.size() > 0 && file.size() < 6) {
-							tiny++;
-						} else if (file.size() > 5 && file.size() < 26) {
-							small++;
-						} else if (file.size() > 25 && file.size() < 126) {
-							medium++;
-						} else if (file.size() > 125) {
-							large++;
+					if (commitMetrics.getCurrentHash().equals(hash)) {
+						if (!commitMetrics.getCurrentSubSystem().contains(subSystem)) {
+							commitMetrics.getCurrentSubSystem().add(subSystem);
 						}
-
-						files.add(file.size());
+					} else {
+						if (commitMetrics.getSubSystem().containsKey(subSystem)) {
+							commitMetrics.getSubSystem().replace(subSystem,
+									(commitMetrics.getSubSystem().get(subSystem) + 1));
+						} else {
+							commitMetrics.getSubSystem().put(subSystem, 1);
+						}
 					}
-
 				}
 
 			} catch (Exception e) {
@@ -1169,51 +912,85 @@ public class Commits {
 			}
 
 		}
-
-		cs.setEmptyCount(cs.getEmptyCount() + empty);
-		cs.setLargeCount(cs.getLargeCount() + large);
-		cs.setTinyCount(cs.getTinyCount() + tiny);
-		cs.setMediumCount(cs.getMediumCount() + medium);
-		cs.setSmallCount(cs.getSmallCount() + small);
-
-		nc.setEmptyCount(nc.getEmptyCount() + emptyCount);
-		nc.setManagementCount(nc.getManagementCount() + managementCount);
-		nc.setReengineeringCount(nc.getReengineeringCount() + reengineeringCount);
-		nc.setCorrectiveEngineeringCount(nc.getCorrectiveEngineeringCount() + correctiveEngineeringCount);
-		nc.setForwardEngineeringCount(nc.getForwardEngineeringCount() + forwardEngineeringCount);
-		nc.setUncategorizedCount(nc.getUncategorizedCount() + uncategorizedCount);
-
 	}
 
 	public static void collectHashsFromUsers(String project) {
 
 		String path = Util.getCommitsFolderPath(project);
 
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		List<String> files = IO.filesOnFolder(path);
 
-		HashMap<String, List<String>> userHashs = new HashMap<>();
-		HashMap<String, List<String>> hashDates = new HashMap<>();
+		HashMap<String, HashSet<CommitDAO>> userHashs = new HashMap<>();
 		List<String> allHashs = new ArrayList<>();
+
+		readCommitJson(path, files, userHashs, allHashs);
+
+		String output = "user, hash, date\n";
+		for (String k : userHashs.keySet()) {
+			for (CommitDAO commit : userHashs.get(k)) {
+				output += k + "," + commit.getHash() + "," + commit.getDate() + "\n";
+			}
+		}
+
+		IO.writeAnyString(Util.getCommitsPath(project) + "users_hashs.csv", output);
+
+		IO.writeAnyFile(Util.getCommitsPath(project) + "all_hashs.txt", allHashs);
+
+	}
+
+	public static List<String> collectPullCommitHashs(String project) {
+
+		String path2 = Util.getPullIndividualCommitsPath(project);
+		List<String> files2 = IO.filesOnFolder(path2);
+		List<String> allHashs = new ArrayList<>();
+		HashMap<String, HashSet<CommitDAO>> userHashs = new HashMap<>();
+		readCommitJson(path2, files2, userHashs, allHashs);
+
+		IO.writeAnyFile(Util.getPullCommitsPath(project) + "pull_hashs.txt", allHashs);
+
+		return allHashs;
+
+	}
+
+	private static void readCommitJson(String path, List<String> files, HashMap<String, HashSet<CommitDAO>> userHashs,
+			List<String> allHashs) {
+		// TODO Auto-generated method stub
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+		HashSet<String> userWithoutLogin = new HashSet<>();
 
 		for (String file : files) {
 			try {
 				String fileData = new String(Files.readAllBytes(Paths.get(path + file)));
-
-				List<LinkedTreeMap> commits = gson.fromJson(fileData, List.class);
+				List<LinkedTreeMap> commits = new ArrayList<>();
+				try {
+					commits = gson.fromJson(fileData, List.class);
+				} catch (Exception e) {
+					LinkedTreeMap c = gson.fromJson(fileData, LinkedTreeMap.class);
+					commits.add(c);
+				}
 
 				for (LinkedTreeMap commit : commits) {
 
-					String author = "";
+					CommitDAO commitDAO = new CommitDAO();
 					String hash = "";
-					String date = "";
+					String authorName = "";
 
 					if (commit.containsKey("author")) {
 						LinkedTreeMap a = (LinkedTreeMap) commit.get("author");
 
+						if (commit.containsKey("sha")) {
+							hash = (String) commit.get("sha");
+							commitDAO.setHash(hash);
+						}
+
 						if (a != null) {
 							if (a.containsKey("login")) {
-								author = (String) a.get("login");
+								authorName = (String) a.get("login");
+								if (authorName.contains("\\")) {
+									continue;
+								}
+								commitDAO.setAuthor(authorName);
 							}
 
 							a = (LinkedTreeMap) commit.get("commit");
@@ -1221,7 +998,8 @@ public class Commits {
 								LinkedTreeMap b = (LinkedTreeMap) a.get("author");
 
 								if (b.containsKey("date")) {
-									date = (String) b.get("date");
+									String date = (String) b.get("date");
+									commitDAO.setDate(date);
 								}
 							}
 						} else {
@@ -1230,64 +1008,581 @@ public class Commits {
 								LinkedTreeMap b = (LinkedTreeMap) a.get("author");
 
 								if (b.containsKey("name")) {
-									author = (String) b.get("name");
+									authorName = (String) b.get("name");
+									if (authorName.contains("\\") || !authorName.contains(" ")) {
+										continue;
+									}
+									userWithoutLogin.add(authorName);
+									commitDAO.setAuthor(authorName);
 								}
 
 								if (b.containsKey("date")) {
-									date = (String) b.get("date");
+									String date = (String) b.get("date");
+									commitDAO.setDate(date);
 								}
 							}
 						}
 
 					}
 
-					if (commit.containsKey("sha")) {
-						hash = (String) commit.get("sha");
-					}
+					if (commitDAO.check()) {
+						String author = commitDAO.getAuthor();
+						String h = commitDAO.getHash();
 
-					if (!userHashs.containsKey(author)) {
-						userHashs.put(author, new ArrayList<String>());
-					}
-					if (!hashDates.containsKey(author)) {
-						hashDates.put(author, new ArrayList<String>());
-					}
+						if (!userHashs.containsKey(author)) {
+							userHashs.put(author, new HashSet<CommitDAO>());
+						}
+						// if (!hashDates.containsKey(authorName)) {
+						// hashDates.put(authorName, new
+						// ArrayList<CommitDAO>());
+						// }
 
-					List<String> hashs = userHashs.get(author);
-					hashs.add(hash);
-					allHashs.add(hash);
-					userHashs.replace(author, hashs);
+						HashSet<CommitDAO> hashs = userHashs.get(author);
+						hashs.add(commitDAO);
+						userHashs.replace(author, hashs);
+						if (!allHashs.contains(h)) {
+							allHashs.add(h);
+						}
 
-					List<String> dates = hashDates.get(author);
-					dates.add(date);
-					hashDates.replace(author, dates);
+						// List<String> dates = hashDates.get(authorName);
+						// dates.add(date);
+						// hashDates.replace(authorName, dates);
+
+					} else {
+						System.out.println(
+								commitDAO.getAuthor() + " - " + commitDAO.getHash() + " - " + commitDAO.getDate());
+					}
 
 				}
 
 			} catch (Exception e) {
 				e.printStackTrace();
+				System.out.println(path + file);
 			}
 
 		}
 
-		String output = "user, hash, date\n";
-		for (String k : userHashs.keySet()) {
-			for (int i = 0; i < userHashs.get(k).size(); i++) {
-				output += k + "," + userHashs.get(k).get(i) + "," + hashDates.get(k).get(i) + "\n";
+		System.out.println("Users Without Login: " + userWithoutLogin.size());
+
+	}
+
+	public static void collectOwnership(String project) {
+		String individualCommitsPath = Util.getIndividualCommitsPath(project);
+
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+		List<String> commitsFilename = IO.filesOnFolder(individualCommitsPath);
+
+		HashMap<String, HashMap<String, Double>> ownership = new HashMap<>();
+		HashMap<String, HashMap<String, Double>> ownershipData = new HashMap<>();
+
+		for (String commitFilename : commitsFilename) {
+
+			String fileData = "";
+
+			File f = new File(individualCommitsPath + commitFilename);
+
+			if (!f.exists()) {
+				continue;
+			}
+
+			try {
+				fileData = new String(Files.readAllBytes(Paths.get(individualCommitsPath + commitFilename)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			LinkedTreeMap<String, ?> commit = gson.fromJson(fileData, LinkedTreeMap.class);
+
+			if (commit != null) {
+
+				String name = "";
+				// List<String> subsystem = new ArrayList<>();
+
+				if (commit.containsKey("author")) {
+
+					if (commit.get("author") != null) {
+
+						LinkedTreeMap<String, ?> author = (LinkedTreeMap<String, ?>) commit.get("author");
+
+						if (author != null) {
+							if (author.containsKey("login")) {
+								name = (String) author.get("login");
+								if (name == null || name.equals("")) {
+									continue;
+								}
+							}
+						}
+
+					}
+				}
+
+				if (name.equals("")) {
+
+					if (commit.containsKey("commit")) {
+
+						if (commit.get("commit") != null) {
+
+							LinkedTreeMap<String, ?> commitInfo = (LinkedTreeMap<String, ?>) commit.get("commit");
+
+							if (commitInfo != null) {
+								if (commitInfo.containsKey("author")) {
+
+									LinkedTreeMap<String, ?> author = (LinkedTreeMap<String, ?>) commitInfo
+											.get("author");
+
+									if (author != null) {
+										if (author.containsKey("name")) {
+
+											name = (String) author.get("name");
+											if (name == null || name.equals("")) {
+												continue;
+											}
+
+										}
+
+									}
+								}
+							}
+
+						}
+					}
+
+				}
+
+				if (name.equals("")) {
+					continue;
+				}
+
+				if (commit.containsKey("files")) {
+
+					if (commit.get("files") != null) {
+
+						List<LinkedTreeMap<String, ?>> files = (List) commit.get("files");
+
+						for (LinkedTreeMap<String, ?> file : files) {
+
+							String filename = (String) file.get("filename");
+
+							if (!ownership.containsKey(filename)) {
+								HashMap<String, Double> subsystemOwnership = new HashMap<>();
+								ownership.put(filename, subsystemOwnership);
+							}
+
+							if (ownership.get(filename).containsKey(name)) {
+								double count = ownership.get(filename).get(name);
+								count++;
+								ownership.get(filename).replace(name, count);
+							} else {
+								ownership.get(filename).put(name, 1.0);
+							}
+
+						}
+					}
+
+				}
+			}
+
+		}
+
+		for (String k : ownership.keySet()) {
+
+			HashMap<String, Double> subsystemOwnership = ownership.get(k);
+			HashMap<String, Double> subsystemOwnershipData = new HashMap<>();
+
+			int total = 0;
+			for (String u : subsystemOwnership.keySet()) {
+				double count = subsystemOwnership.get(u);
+				total += count;
+			}
+
+			for (String u : subsystemOwnership.keySet()) {
+				double count = subsystemOwnership.get(u);
+
+				double percent = ((double) count) / (double) total;
+
+				if (!subsystemOwnershipData.containsKey(u)) {
+					subsystemOwnershipData.put(u, percent);
+				} else {
+					subsystemOwnershipData.replace(u, percent);
+				}
+
+				if (!ownershipData.containsKey(k)) {
+					ownershipData.put(k, subsystemOwnershipData);
+				} else {
+					ownershipData.replace(k, subsystemOwnershipData);
+				}
+
+			}
+
+		}
+
+		String output = gson.toJson(ownershipData);
+
+		IO.writeAnyString(Util.getCommitsPath(project) + "ownership.json", output);
+
+	}
+
+	public static List<UserCommit> readUserCommits(String project, String path) {
+		List<UserCommit> userCommits = new ArrayList<>();
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		List<String> files = IO.filesOnFolder(path);
+
+		for (String file : files) {
+
+			try {
+				UserCommit uc = new UserCommit();
+
+				if (path.contains("pull")) {
+					uc.setPullCommit(true);
+				}
+
+				String fileData = new String(Files.readAllBytes(Paths.get(path + file)));
+				LinkedTreeMap commitFile = gson.fromJson(fileData, LinkedTreeMap.class);
+
+				if (commitFile.containsKey("commit")) {
+					LinkedTreeMap<String, ?> commit = (LinkedTreeMap) commitFile.get("commit");
+
+					if (commit.containsKey("author") && commit.containsKey("committer")) {
+
+						LinkedTreeMap<String, String> author = (LinkedTreeMap) commit.get("author");
+
+						String name = author.get("name");
+
+						if (!name.contains(" ")) {
+							name = "";
+						}
+
+						String login = "";
+
+						if (commitFile.containsKey("author")) {
+							LinkedTreeMap<String, String> au = (LinkedTreeMap) commitFile.get("author");
+
+							if (au != null) {
+								login = (String) au.get("login");
+							}
+
+						}
+
+						if (login.equals("")) {
+							if (name.contains(" ")) {
+								login = name;
+							}
+
+						}
+
+						if (login.contains("\\")) {
+							continue;
+						}
+
+						if (login.equals("NA") || login.equals("(no author)")) {
+							continue;
+						}
+
+						if (author.containsKey("email")) {
+							String email = author.get("email");
+							uc.setAuthorEmail(email);
+						}
+						if (author.containsKey("date")) {
+							String date = author.get("date");
+							uc.setDate(date);
+						}
+						if (commitFile.containsKey("sha")) {
+							String sha = (String) commitFile.get("sha");
+							uc.setSha(sha);
+						}
+
+						if (commit.containsKey("message")) {
+							String patch = (String) commit.get("message");
+
+							patch = patch.toLowerCase();
+
+							String classification = "";
+
+							if (patch.equals("")) {
+								classification = "Empty";
+							} else {
+
+								boolean b = true;
+
+								for (String mana : NatureCommit.getNatureList("management")) {
+									if (patch.contains(mana)) {
+										classification = "Management";
+										b = false;
+										break;
+									}
+								}
+
+								if (b) {
+									for (String re : NatureCommit.getNatureList("reeg")) {
+										if (patch.contains(re)) {
+											classification = "Reengineering";
+											b = false;
+											break;
+										}
+									}
+								}
+								if (b) {
+									for (String co : NatureCommit.getNatureList("correct")) {
+										if (patch.contains(co)) {
+											classification = "Corrective Engineering";
+											b = false;
+											break;
+										}
+									}
+
+								}
+								if (b) {
+									for (String fo : NatureCommit.getNatureList("foward")) {
+										if (patch.contains(fo)) {
+											classification = "Forward Engineering";
+											b = false;
+											break;
+										}
+									}
+								}
+
+								if (b) {
+									classification = "Uncategorized";
+								}
+							}
+
+							uc.setNatureClassification(classification);
+
+						}
+
+						if (commitFile.containsKey("files")) {
+							List<LinkedTreeMap> f = (List) commitFile.get("files");
+							List<String> filenames = new ArrayList<>();
+
+							for (LinkedTreeMap<?, ?> commitFiles : f) {
+
+								if (f.size() == 0) {
+									uc.setSizeClassification("empty");
+								} else if (f.size() > 0 && f.size() < 6) {
+									uc.setSizeClassification("tiny");
+								} else if (f.size() > 5 && f.size() < 26) {
+									uc.setSizeClassification("small");
+								} else if (f.size() > 25 && f.size() < 126) {
+									uc.setSizeClassification("medium");
+								} else if (f.size() > 125) {
+									uc.setSizeClassification("large");
+								}
+
+								uc.setModifiedFiles(f.size());
+
+								if (commitFiles.containsKey("filename") && commitFiles != null) {
+									String filename = (String) commitFiles.get("filename");
+
+									filename = filename.toLowerCase();
+									filenames.add(filename);
+
+									if (filename.contains("test")) {
+										uc.setTestInclusion(true);
+									} else {
+										uc.setTestInclusion(false);
+									}
+								}
+							}
+
+							uc.setFiles(filenames);
+						}
+
+						if (uc.getSizeClassification() == null || uc.getSizeClassification().equals("")) {
+							uc.setSizeClassification("empty");
+						}
+
+						if (commitFile.containsKey("stats")) {
+							LinkedTreeMap<String, Double> stats = (LinkedTreeMap<String, Double>) commitFile
+									.get("stats");
+
+							if (stats.containsKey("additions")) {
+								Double addition = stats.get("additions");
+								uc.setAdditions(addition);
+							}
+
+							if (stats.containsKey("deletions")) {
+								Double deletion = stats.get("deletions");
+								uc.setDeletions(deletion);
+							}
+
+							uc.setLinesChanged(uc.getAdditions() + uc.getDeletions());
+						}
+
+						uc.setAuthorLogin(login);
+						uc.setAuthorName(name);
+
+						userCommits.add(uc);
+					}
+
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.err.println(file);
 			}
 		}
 
-		// System.out.println(output);
+		return userCommits;
+	}
 
-		System.out.println(Util.getCommitsPath(project));
-		IO.writeAnyString(Util.getCommitsPath(project) + "users_hashs.csv", output);
+	public static void generateCommitsInfo(String project) {
+		// TODO Auto-generated method stub
+		System.out.println("Generating commit info");
+		File f = new File(Util.getCommitsPath(project) + "commits_info.json");
 
-		// String output = gson.toJson(userHashs);
+		// if (f.exists()) {
+		// return;
+		// }
 
-		// IO.writeAnyString(Util.getCommitsPath(project) + "users_hashs.json",
-		// output);
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-		// IO.writeAnyFile(Util.getCommitsPath(project) + "all_hashs.txt",
-		// allHashs);
+		List<UserCommit> userCommits = readUserCommits(project, Util.getIndividualCommitsPath(project));
+		List<UserCommit> userPullCommits = readUserCommits(project, Util.getPullIndividualCommitsPath(project));
+		List<UserCommit> userAllCommits = new ArrayList<>();
+		// List<UserCommit> removeCommits = new ArrayList<>();
+
+		for (UserCommit userCommit : userCommits) {
+			for (UserCommit userPullCommit : userPullCommits) {
+				if (userCommit.getSha().equals(userPullCommit.getSha())) {
+					userCommit.setPullCommit(true);
+				}
+			}
+		}
+
+		// for (UserCommit removeCommit : removeCommits) {
+		// userCommits.remove(removeCommit);
+		// }
+
+		userAllCommits.addAll(userCommits);
+		// userAllCommits.addAll(userPullCommits);
+
+		String output = gson.toJson(userAllCommits);
+
+		IO.writeAnyString(Util.getCommitsPath(project) + "commits_info.json", output);
+	}
+
+	public static List<UserCommit> readCommitsInfo(String project) {
+		// TODO Auto-generated method stub
+		String file = Util.getCommitsPath(project) + "commits_info.json";
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		List<UserCommit> userCommits = new ArrayList<>();
+
+		try {
+			String fileData = new String(Files.readAllBytes(Paths.get(file)));
+			List<LinkedTreeMap> commitFile = gson.fromJson(fileData, List.class);
+
+			for (LinkedTreeMap commit : commitFile) {
+				String hash = (String) commit.get("sha");
+				String date = (String) commit.get("date");
+				String authorName = (String) commit.get("authorName");
+				String authorEmail = (String) commit.get("authorEmail");
+				String authorLogin = (String) commit.get("authorLogin");
+				String natureClassification = (String) commit.get("natureClassification");
+				String sizeClassification = (String) commit.get("sizeClassification");
+				boolean testInclusion = (boolean) commit.get("testInclusion");
+				boolean pullCommit = (boolean) commit.get("pullCommit");
+				double additions = (double) commit.get("additions");
+				double deletions = (double) commit.get("deletions");
+				double linesChanged = (double) commit.get("linesChanged");
+				double modifiedFiles = (double) commit.get("modifiedFiles");
+				List<String> files = (List) commit.get("files");
+
+				if (authorLogin.contains(" ") || authorLogin.equals("")) {
+					continue;
+				}
+
+				UserCommit uc = new UserCommit();
+
+				uc.setSha(hash);
+				uc.setDate(date);
+				uc.setAuthorName(authorName);
+				uc.setAuthorEmail(authorEmail);
+				uc.setAuthorLogin(authorLogin);
+				uc.setNatureClassification(natureClassification);
+				uc.setSizeClassification(sizeClassification);
+				uc.setTestInclusion(testInclusion);
+				uc.setPullCommit(pullCommit);
+				uc.setAdditions(additions);
+				uc.setDeletions(deletions);
+				uc.setLinesChanged(linesChanged);
+				uc.setModifiedFiles(modifiedFiles);
+				uc.setFiles(files);
+
+				userCommits.add(uc);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.err.println(file);
+		}
+
+		return userCommits;
+	}
+
+	public static void analyzeOwnership(String project) {
+		// TODO Auto-generated method stub
+
+		List<UserCommit> commits = readCommitsInfo(project);
+		HashMap<String, List<String>> hashFiles = new HashMap<>();
+
+		commits = Util.orderCommits(commits);
+
+		List<String> ownerships = new ArrayList<>();
+
+		for (UserCommit uc : commits) {
+
+			for (String file : uc.getFiles()) {
+
+				if (!hashFiles.containsKey(file)) {
+					hashFiles.put(file, new ArrayList<String>());
+				}
+
+				String login = "";
+
+				if (uc.getAuthorLogin().equals("") || uc.getAuthorLogin().equals(" ")) {
+					if (uc.getAuthorName().equals("") || uc.getAuthorName().equals(" ")) {
+						continue;
+					}
+					login = uc.getAuthorName();
+				} else {
+					login = uc.getAuthorLogin();
+				}
+
+				if (login.equals("")) {
+					System.out.println(uc.getSha());
+				}
+
+				hashFiles.get(file).add(login);
+
+			}
+
+			double owner = 0;
+			double totalOwner = 0;
+
+			for (String file : uc.getFiles()) {
+
+				for (String name : hashFiles.get(file)) {
+					if (name.equals(uc.getAuthorLogin())) {
+						owner++;
+					}
+				}
+				totalOwner += hashFiles.get(file).size();
+			}
+
+			if (totalOwner == 0) {
+				totalOwner = 1;
+			}
+
+			double ownershipCommit = owner / totalOwner;
+
+			ownerships.add(uc.getSha() + "," + uc.getAuthorLogin() + "," + uc.getDate() + "," + ownershipCommit);
+			System.out.println(uc.getSha() + "," + uc.getAuthorLogin() + "," + uc.getDate() + "," + ownershipCommit);
+		}
+
+		// System.out.println(hashFiles);
+
+		IO.writeAnyFile(Util.getMetricsPath(project) + "ownership.csv", ownerships);
 
 	}
 

@@ -1,5 +1,6 @@
 package endpoints;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,14 +16,27 @@ public class CommitsAPI {
 
 	public static void downloadIndividualCommitsByHash(List<String> hashs, String url, String path) {
 
+		//List<String> hashsToDownload = new ArrayList<>();
+
+		boolean flag = true;
 		for (String hash : hashs) {
+			File f = new File(path + hash + ".json");
+			if (!f.exists()) {
+			//	flag = false;
+				//hashsToDownload.add(hash);
+			}
+		}
+
+		//if (flag) {
+		//	return;
+		//}
+
+		
+		for (String hash : hashs) {
+			
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
 					+ " \"https://api.github.com/repos/" + url + "/commits/" + hash + "\"";
-			boolean empty = JSONManager.getJSON(path + hash + ".json", command, false);
-
-			if (empty) {
-				break;
-			}
+			JSONManager.getJSON(path + hash + ".json", command, true);
 
 		}
 
@@ -61,15 +75,20 @@ public class CommitsAPI {
 	}
 
 	public static void downloadAllCommits(String project, String url) {
-		String path = Util.getCommitsFolderPath(project);
+		final String path = Util.getCommitsFolderPath(project);
 		// List<String> commands = new ArrayList<>();
-		for (int j = 1; j < 10000; j++) {
-			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/commits?page=" + j + "\"";
-			boolean empty = JSONManager.getJSON(path + j + ".json", command, false);
-			if (empty) {
-				break;
-			}
+		for (int j = 1; j < 1100; j++) {
+
+				final String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
+						+ " \"https://api.github.com/repos/" + url + "/commits?page=" + j + "\"";
+				boolean empty = false;
+
+				empty = JSONManager.getJSON(path + j + ".json", command, true);
+
+				if (empty) {
+					break;
+				}
+
 		}
 
 	}
@@ -87,13 +106,13 @@ public class CommitsAPI {
 		for (String user : users) {
 			System.out.println(user);
 
-			List<UserCommit> userCommits = Commits.mineCommits(Util.getUserPath(project, user), Util.getUserPath(project, user),
-					user);
+			List<UserCommit> userCommits = Commits.mineCommits(Util.getUserPath(project, user),
+					Util.getUserPath(project, user), user);
 			List<String> hashs = new ArrayList<>();
 
 			for (UserCommit uc : userCommits) {
 				hashs.add(uc.getSha());
-				
+
 			}
 
 			String path = Util.getUserCommitsPath(project, user);

@@ -1,6 +1,8 @@
 package utils;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -11,6 +13,18 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.collections.ComparatorUtils;
+import org.joda.time.Days;
+import org.joda.time.LocalDateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.internal.LinkedTreeMap;
+
+import objects.CommitInfo;
+import objects.UserCommit;
+import objects.UserPoint;
 
 public class Util {
 
@@ -160,6 +174,187 @@ public class Util {
 
 	}
 
+	public static String calculateCommitFrequency(UserPoint userPoint, String hash) {
+
+		List<String> dates = new ArrayList<>();
+
+		if (userPoint.getCommitInfo().size() == 1) {
+			return "single";
+		}
+
+		if (userPoint.getCommitInfo().size() > 1 && userPoint.getCommitInfo().size() <= 20) {
+			return "other";
+		}
+
+		for (CommitInfo cm : userPoint.getCommitInfo()) {
+
+			if (cm.getHash().equals(hash)) {
+				break;
+			}
+
+			String date = cm.getDate();
+			date = date.replace("T", " ");
+			date = date.replace("Z", "");
+			// date = date.replace(":", "-");
+			dates.add(date);
+		}
+
+		List<Integer> differences = new ArrayList<>();
+
+		if (dates.size() > 0) {
+
+			for (int i = 0; i < dates.size() - 1; i++) {
+				String date1 = dates.get(i);
+				String date2 = dates.get(i + 1);
+
+				DateTimeFormatter format = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+
+				int days = Days.daysBetween(LocalDateTime.parse(date1, format), LocalDateTime.parse(date2, format))
+						.getDays();
+				differences.add(days);
+			}
+
+		}
+
+		double frequency = 0;
+
+		if (differences.size() == 0) {
+			return "single";
+		} else if (differences.size() > 0) {
+			if (differences.size() % 2 == 0) {
+				frequency = (double) (differences.get(differences.size() / 2)
+						+ differences.get(differences.size() / 2 - 1)) / 2;
+			} else {
+				frequency = (double) differences.get(differences.size() / 2);
+			}
+		}
+
+		if (frequency >= 0 && frequency <= 7) {
+			return "daily";
+		}
+
+		if (frequency > 7 && frequency <= 30) {
+			return "weekly";
+		}
+
+		if (frequency > 30) {
+			return "monthly";
+		}
+
+		System.out.println("Frequency: " + frequency);
+		return "daily";
+	}
+
+	public static String calculateCommitFrequency(List<UserCommit> userCommits, String hash) {
+
+		List<String> dates = new ArrayList<>();
+
+		if (userCommits.size() == 1) {
+			return "single";
+		}
+
+		if (userCommits.size() > 1 && userCommits.size() <= 20) {
+			return "other";
+		}
+
+		for (UserCommit uc : userCommits) {
+
+			if (uc.getSha().equals(hash)) {
+				break;
+			}
+
+			String date = uc.getDate();
+			date = date.replace("T", " ");
+			date = date.replace("Z", "");
+			// date = date.replace(":", "-");
+			dates.add(date);
+		}
+
+		List<Integer> differences = new ArrayList<>();
+
+		if (dates.size() > 0) {
+
+			for (int i = 0; i < dates.size() - 1; i++) {
+				String date1 = dates.get(i);
+				String date2 = dates.get(i + 1);
+
+				DateTimeFormatter format = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+
+				int days = Days.daysBetween(LocalDateTime.parse(date1, format), LocalDateTime.parse(date2, format))
+						.getDays();
+				differences.add(days);
+			}
+
+		}
+
+		double frequency = 0;
+
+		if (differences.size() == 0) {
+			return "single";
+		} else if (differences.size() > 0) {
+			if (differences.size() % 2 == 0) {
+				frequency = (double) (differences.get(differences.size() / 2)
+						+ differences.get(differences.size() / 2 - 1)) / 2;
+			} else {
+				frequency = (double) differences.get(differences.size() / 2);
+			}
+		}
+
+		if (frequency >= 0 && frequency <= 7) {
+			return "daily";
+		}
+
+		if (frequency > 7 && frequency <= 30) {
+			return "weekly";
+		}
+
+		if (frequency > 30) {
+			return "monthly";
+		}
+
+		System.out.println("Frequency: " + frequency);
+		return "daily";
+	}
+
+	public static double calculateREXPCommit(UserPoint userPoint, String hash) {
+
+		HashMap<String, Double> dates = new HashMap<>();
+
+		for (CommitInfo cm : userPoint.getCommitInfo()) {
+
+			String year = cm.getDate();
+			year = year.substring(0, year.indexOf("-"));
+
+			if (!dates.containsKey(year)) {
+				dates.put(year, 0.0);
+			}
+
+			double v = dates.get(year);
+
+			dates.replace(year, (v + 1));
+
+			if (cm.getHash().equals(hash)) {
+				break;
+			}
+		}
+
+		double exp = 0;
+
+		for (String k : dates.keySet()) {
+			double currentYear = 2018;
+			double year = Double.parseDouble(k);
+			double commitsOfYear = dates.get(k);
+
+			// System.out.println(currentYear + "-" + (year - 1) + " = " +
+			// (currentYear - (year - 1)));
+
+			exp += (commitsOfYear / (currentYear - (year - 1)));
+
+		}
+
+		return exp;
+	}
+
 	public static int getSumInt(List<Integer> list) {
 		sortList(list);
 		int sum = 0;
@@ -176,6 +371,22 @@ public class Util {
 			sum += s;
 		}
 		return sum;
+	}
+
+	public static double calculateMedianDouble(List<Double> list) {
+		double medianCommits = 0;
+		if (list.size() == 0) {
+			medianCommits = 0;
+		} else if (list.size() > 0) {
+
+			if (list.size() % 2 == 0) {
+				medianCommits = (double) (list.get(list.size() / 2) + list.get(list.size() / 2 - 1)) / 2;
+			} else {
+				medianCommits = (double) list.get(list.size() / 2);
+			}
+		}
+		
+		return medianCommits;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -389,8 +600,8 @@ public class Util {
 		checkDirectory(path);
 		return path;
 	}
-	
-	public static String getCommitCommentsGeneralFolder(String project){
+
+	public static String getCommitCommentsGeneralFolder(String project) {
 		String path = getCommitCommentsFolder(project) + "general/";
 		checkDirectory(path);
 		return path;
@@ -402,4 +613,67 @@ public class Util {
 		return path;
 	}
 
+	public static List<UserCommit> orderCommits(List<UserCommit> userCommits) {
+		for (int i = 0; i < userCommits.size() - 1; i++) {
+			for (int j = i + 1; j < userCommits.size(); j++) {
+				if (!Util.checkPastDate(userCommits.get(i).getDate(), userCommits.get(j).getDate(), "-")) {
+					UserCommit uc = userCommits.get(i);
+					userCommits.set(i, userCommits.get(j));
+					userCommits.set(j, uc);
+				}
+			}
+		}
+
+		return userCommits;
+	}
+
+	public static String getPullIndividualCommitsPath(String project) {
+		String path = getPullCommitsPath(project) + "individual/";
+		checkDirectory(path);
+		return path;
+	}
+
+	public static String getMetricsPath(String project) {
+		String path = LocalPaths.PATH + project + "/metrics/";
+		checkDirectory(path);
+		return path;
+	}
+
+	public static String getDate(String project, String firstHash) {
+		
+		String date = "";
+		
+		String file = Util.getIndividualCommitsPath(project) + firstHash + ".json";
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+		try {
+			String fileData = new String(Files.readAllBytes(Paths.get(file)));
+			LinkedTreeMap commitFile = gson.fromJson(fileData, LinkedTreeMap.class);
+
+			if(commitFile.containsKey("commit")){
+				LinkedTreeMap commit = (LinkedTreeMap) commitFile.get("commit");
+				
+				if(commit != null && commit.containsKey("author")){
+					LinkedTreeMap author = (LinkedTreeMap) commit.get("author");
+					
+					if(author != null && author.containsKey("date")){
+						date = (String) author.get("date");
+					}
+				}
+			}
+		
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		if(date.equals("")){
+			System.out.println(file);
+			System.out.println("******** No date!! **********");
+		} else {
+			date = date.substring(0, date.indexOf("T"));
+			System.out.println(date);
+		}
+		
+		return date;
+	}
 }

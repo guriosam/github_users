@@ -1,6 +1,5 @@
 package generators;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -16,10 +15,7 @@ import endpoints.CommitsAPI;
 import objects.UserComment;
 import objects.UserCommit;
 import objects.UserIssue;
-import objects.UserPullRequest;
-import utils.Config;
 import utils.IO;
-import utils.JSONManager;
 import utils.LocalPaths;
 import utils.Util;
 
@@ -133,7 +129,7 @@ public class Issues {
 
 	}
 
-	public static HashMap<String, UserComment> readComments(String project, String userLogin, String authorDate) {
+	public static HashMap<String, List<String>> readComments(String project) {
 
 		try {
 
@@ -141,10 +137,10 @@ public class Issues {
 			String path = LocalPaths.PATH + project + "/issues/comments/";
 			List<String> files = IO.filesOnFolder(path);
 
-			HashMap<String, UserComment> userCount = new HashMap<String, UserComment>();
+			HashMap<String, List<String>> userCount = new HashMap<>();
 
 			for (String file : files) {
-
+				
 				String fileData = new String(Files.readAllBytes(Paths.get(path + file)));
 				List<LinkedTreeMap> comments = gson.fromJson(fileData, List.class);
 
@@ -153,26 +149,12 @@ public class Issues {
 					LinkedTreeMap user = (LinkedTreeMap) comment.get("user");
 					String login = (String) user.get("login");
 
-					if (!login.equals(userLogin)) {
-						continue;
-					}
-
 					if (!userCount.containsKey(login)) {
-						userCount.put(login, new UserComment());
+						userCount.put(login, new ArrayList<String>());
 					}
 					String created_at = (String) comment.get("created_at");
 
-					if (!authorDate.equals("")) {
-						if (!Util.checkPastDate(created_at, authorDate, "-")) {
-							continue;
-
-						}
-					}
-
-					UserComment count = userCount.get(login);
-					count.setCount(count.getCount() + 1);
-					count.setCreated_at(created_at);
-					userCount.replace(login, count);
+					userCount.get(login).add(created_at);
 
 				}
 
@@ -186,255 +168,6 @@ public class Issues {
 		}
 
 		return new HashMap<>();
-
-	}
-
-	public static List<UserPullRequest> getPullRequests(String project) {
-
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		String path = LocalPaths.PATH + project + "/pull_requests.json";
-		List<UserPullRequest> userPull = new ArrayList<>();
-
-		List<String> heuristic1 = IO.readAnyFile(Util.getPullsFolder(project) + "h1_ids.txt");
-		List<String> heuristic2 = IO.readAnyFile(Util.getPullsFolder(project) + "pull_requests_h2.txt");
-
-		int countH2 = 0;
-		int countH1 = 0;
-
-		try {
-			String fileData = new String(Files.readAllBytes(Paths.get(path)));
-			List<LinkedTreeMap> pulls = gson.fromJson(fileData, List.class);
-
-			for (LinkedTreeMap pull : pulls) {
-
-				boolean m = false;
-				UserPullRequest upr = new UserPullRequest();
-				String id = "";
-
-				if (pull.containsKey("id")) {
-					String number = (String) pull.get("id");
-					upr.setId(number);
-					id = number;
-
-					if (heuristic1.contains(id)) {
-						m = true;
-					}
-					if (heuristic2.contains(id)) {
-						m = true;
-					}
-
-				}
-				if (pull.containsKey("state")) {
-					upr.setState((String) pull.get("state"));
-
-				}
-				String name = "";
-				if (pull.containsKey("user")) {
-					String number = (String) pull.get("user");
-					upr.setUser(number);
-					name = number;
-				}
-
-				if (pull.containsKey("merged")) {
-
-					if (m) {
-						upr.setMerged(true);
-					} else {
-						upr.setMerged((boolean) pull.get("merged"));
-					}
-					// }
-
-				}
-				if (pull.containsKey("merged_by")) {
-					if (pull != null && pull.containsKey("merged_by")) {
-						upr.setMerged_by((String) pull.get("merged_by"));
-					}
-				}
-
-				if (pull.containsKey("created_at")) {
-					String created_date = (String) pull.get("created_at");
-					upr.setCreated_at(created_date);
-				}
-				if (pull.containsKey("closed_at")) {
-					String closed_date = (String) pull.get("closed_at");
-					upr.setClosed_at(closed_date);
-				}
-
-				if (pull.containsKey("reviewers")) {
-					List<String> users = (List<String>) pull.get("reviewers");
-
-					List<String> rev = new ArrayList<>();
-					for (String user : users) {
-						rev.add(user);
-					}
-					upr.setReviewers(rev);
-				}
-
-				userPull.add(upr);
-
-			}
-
-			return userPull;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		return new ArrayList<UserPullRequest>();
-
-	}
-
-	public static void readPullRequests(String project) {
-
-		System.out.println("Reading Pull Requests");
-
-		try {
-
-			Gson gson = new GsonBuilder().setPrettyPrinting().create();
-			String path = LocalPaths.PATH + project + "/pulls/individual/";
-			List<String> files = IO.filesOnFolder(path);
-			List<UserPullRequest> userPull = new ArrayList<>();
-
-			for (String file : files) {
-
-				if (!file.contains("json")) {
-					continue;
-				}
-
-				String fileData = new String(Files.readAllBytes(Paths.get(path + file)));
-				LinkedTreeMap pull = gson.fromJson(fileData, LinkedTreeMap.class);
-
-				UserPullRequest upr = new UserPullRequest();
-
-				if (pull.containsKey("user")) {
-
-					LinkedTreeMap user = (LinkedTreeMap) pull.get("user");
-
-					if (user != null && user.containsKey("login")) {
-						String login = (String) user.get("login");
-						upr.setUser(login);
-					}
-
-				}
-
-				if (pull.containsKey("state")) {
-					upr.setState((String) pull.get("state"));
-
-				}
-
-				if (pull.containsKey("created_at")) {
-					upr.setCreated_at((String) pull.get("created_at"));
-
-				}
-
-				if (pull.containsKey("closed_at")) {
-					upr.setClosed_at((String) pull.get("closed_at"));
-
-				}
-				if (pull.containsKey("merged")) {
-					upr.setMerged((boolean) pull.get("merged"));
-				}
-				if (pull.containsKey("merged_by")) {
-					LinkedTreeMap user = (LinkedTreeMap) pull.get("merged_by");
-					if (user != null && user.containsKey("login")) {
-						upr.setMerged_by((String) user.get("login"));
-					}
-				}
-				if (pull.containsKey("requested_reviewers")) {
-					List<LinkedTreeMap> users = (List<LinkedTreeMap>) pull.get("requested_reviewers");
-
-					List<String> rev = new ArrayList<>();
-					for (LinkedTreeMap<?, ?> user : users) {
-						if (user != null && user.containsKey("login")) {
-							rev.add((String) user.get("login"));
-						}
-					}
-
-					upr.setReviewers(rev);
-				}
-				if (pull.containsKey("number")) {
-					String number = pull.get("number") + "";
-					number = number.replace(".", "");
-					number = number.substring(0, number.length() - 1);
-					upr.setId(number);
-				}
-
-				if (upr.getUser() != null && !upr.getUser().equals("")) {
-					userPull.add(upr);
-				}
-
-			}
-
-			String output = gson.toJson(userPull);
-
-			IO.writeAnyString(LocalPaths.PATH + project + "/pull_requests.json", output);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			// TODO: handle exception
-		}
-
-	}
-
-	public static void generatePullsCalls(String project, String url) {
-
-		System.out.println("Generating Pulls Calls");
-
-		String path = Util.getGeneralPullsFolder(project);
-
-		for (int i = 1; i < 2000; i++) {
-
-			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/pulls" + "?state=all&page=" + i + "\"";
-
-			boolean empty = JSONManager.getJSON(path + i + ".json", command, false);
-
-			if (empty) {
-				break;
-			}
-		}
-
-	}
-
-	public static void generateCommentsCalls(String project, String url) {
-
-		String path = Util.getIssuesCommentsPath(project);
-
-		for (int i = 1; i < 10000; i++) {
-
-			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/issues/comments?page=" + i + "\"";
-
-			boolean empty = JSONManager.getJSON(path + "comments_" + i + ".json", command, false);
-
-			if (empty) {
-				break;
-			}
-
-		}
-
-	}
-
-	public static void generateIndividualIssuesCall(String project, String url) {
-
-		String path = Util.getIssuesPath(project);
-
-		List<String> ids = IO.readAnyFile(path + "issues_ids.txt");
-
-		List<String> commands = new ArrayList<>();
-
-		for (String id : ids) {
-
-			File f = new File(Util.getIndividualIssuesFolder(project));
-			if (!f.exists()) {
-				f.mkdirs();
-			}
-
-			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/issues/" + id + "\"";
-
-			JSONManager.getJSON(path + "individual/" + id + ".json", command, false);
-
-		}
 
 	}
 
