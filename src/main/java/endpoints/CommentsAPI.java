@@ -19,7 +19,7 @@ public class CommentsAPI {
 		for (int i = 1; i < 10000; i++) {
 
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/comments?page=" + i + "\"";
+					+ " https://api.github.com/repos/" + url + "/comments?page=" + i;
 
 			boolean empty = JSONManager.getJSON(path + "comments_" + i + ".json", command, false);
 
@@ -41,7 +41,7 @@ public class CommentsAPI {
 		for (String id : ids) {
 
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/comments/" + id + "\"";
+					+ " https://api.github.com/repos/" + url + "/comments/" + id;
 
 			JSONManager.getJSON(path + id + ".json", command, false);
 

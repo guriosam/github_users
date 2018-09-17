@@ -33,7 +33,7 @@ public class PullsAPI {
 			for (int i = 1; i < 100; i++) {
 
 				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "/commits?page=" + i + "\"";
+						+ " https://api.github.com/repos/" + url + "/pulls/" + id + "/commits?page=" + i;
 
 				boolean empty = JSONManager.getJSON(pathCommits + subPath + id + "/" + i + ".json", command, false);
 
@@ -68,7 +68,7 @@ public class PullsAPI {
 				}
 
 				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "\"";
+						+ " https://api.github.com/repos/" + url + "/pulls/" + id;
 
 				boolean f = JSONManager.getJSON(pathIndividual + id + ".json", command, false);
 
@@ -105,7 +105,7 @@ public class PullsAPI {
 			for (int i = 1; i <= 50; i++) {
 				
 				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-						+ " \"https://api.github.com/repos/" + url + "/pulls/" + id + "/comments?page=" + i + "\"";
+						+ " https://api.github.com/repos/" + url + "/pulls/" + id + "/comments?page=" + i;
 				
 
 				boolean empty = JSONManager.getJSON(pathPullsComments + id + "/comments_" + i + ".json", command, true);
@@ -128,7 +128,7 @@ public class PullsAPI {
 		for (int i = 1; i < 2000; i++) {
 	
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/pulls" + "?state=all&page=" + i + "\"";
+					+ " https://api.github.com/repos/" + url + "/pulls" + "?state=all&page=" + i;
 	
 			boolean empty = JSONManager.getJSON(path + i + ".json", command, false);
 	

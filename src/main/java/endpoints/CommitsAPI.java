@@ -35,7 +35,7 @@ public class CommitsAPI {
 		for (String hash : hashs) {
 			
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/commits/" + hash + "\"";
+					+ " https://api.github.com/repos/" + url + "/commits/" + hash;
 			JSONManager.getJSON(path + hash + ".json", command, true);
 
 		}
@@ -49,7 +49,7 @@ public class CommitsAPI {
 			String path = Util.getUserPath(project, name);
 			for (int j = 1; j < 10000; j++) {
 				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-						+ " \"https://api.github.com/repos/" + url + "/commits?author=" + name + "&page=" + j + "\"";
+						+ " https://api.github.com/repos/" + url + "/commits?author=" + name + "&page=" + j;
 				boolean empty = JSONManager.getJSON(path + j + ".json", command, false);
 				if (empty) {
 					break;
@@ -62,7 +62,7 @@ public class CommitsAPI {
 			String path = Util.getUserPath(project, name);
 			for (int j = 1; j < 10000; j++) {
 				String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-						+ " \"https://api.github.com/repos/" + url + "/commits?author=" + name + "&page=" + j + "\"";
+						+ " https://api.github.com/repos/" + url + "/commits?author=" + name + "&page=" + j;
 				boolean empty = JSONManager.getJSON(path + j + ".json", command, false);
 
 				if (empty) {
@@ -80,7 +80,7 @@ public class CommitsAPI {
 		for (int j = 1; j < 1100; j++) {
 
 				final String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-						+ " \"https://api.github.com/repos/" + url + "/commits?page=" + j + "\"";
+						+ " https://api.github.com/repos/" + url + "/commits?page=" + j;
 				boolean empty = false;
 
 				empty = JSONManager.getJSON(path + j + ".json", command, true);

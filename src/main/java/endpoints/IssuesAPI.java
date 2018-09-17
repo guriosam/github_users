@@ -19,7 +19,7 @@ public class IssuesAPI {
 
 		for (int i = 1; i < 1000; i++) {
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/issues?state=all&page=" + i + "\"";
+					+ " https://api.github.com/repos/" + url + "/issues?state=all&page=" + i;
 
 			boolean empty = JSONManager.getJSON(path + i + ".json", command, false);
 
@@ -38,7 +38,7 @@ public class IssuesAPI {
 		for (int i = 1; i < 10000; i++) {
 	
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/issues/comments?page=" + i + "\"";
+					+ " https://api.github.com/repos/" + url + "/issues/comments?page=" + i;
 	
 			boolean empty = JSONManager.getJSON(path + "comments_" + i + ".json", command, false);
 	
@@ -66,7 +66,7 @@ public class IssuesAPI {
 			}
 	
 			String command = LocalPaths.CURL + " -i -u " + Config.USERNAME + ":" + Config.PASSWORD
-					+ " \"https://api.github.com/repos/" + url + "/issues/" + id + "\"";
+					+ " https://api.github.com/repos/" + url + "/issues/" + id;
 	
 			JSONManager.getJSON(path + "individual/" + id + ".json", command, false);
 	
