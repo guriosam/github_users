@@ -2,11 +2,11 @@ package utils;
 
 public class LocalPaths {
 	
-	public static final String PATH = "D:/Pesquisa/github_profiles/";
+	public static final String PATH = "/home/evandro/GithubUsersRepository/github_profiles/";
 	
-	public static final String PATH_GIT = "D:/Pesquisa/github_projects/";
-	public static final String CURL = "C:/Program Files/cURL/bin/curl.exe";
+	public static final String PATH_GIT = "/home/evandro/GithubUsersRepository/github_projects/";
+	public static final String CURL = "curl";
 	
-	public static final String PROJECT_PATH = "C:/Users/gurio/workspace/miner/";
+	public static final String PROJECT_PATH = "/home/evandro/GithubProjects/github-users/";
 	
 }
