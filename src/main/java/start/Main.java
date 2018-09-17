@@ -29,26 +29,41 @@ public class Main {
 	public static void main(String[] args) {
 
 		List<String> projects = new ArrayList<>();
-
+		
+		//JavaScript
+		projects.add("angular.js");
+		projects.add("atom");
+		projects.add("three.js");
+		projects.add("webpack");
+		projects.add("meteor");
+		
+		//Python
+		projects.add("ansible");
+		projects.add("scikit-learn");
+		projects.add("pandas");
+		projects.add("ipython");
+		projects.add("salt");
+		
+		//Java
 		projects.add("elasticsearch");
 		projects.add("spring-boot");
 		projects.add("netty");
 		projects.add("bazel");
 		projects.add("presto");
-		projects.add("Signal-Android");
-		projects.add("okhttp");
-		projects.add("RxJava");
-		projects.add("guava");
-
-		projects.add("elasticsearch-hadoop");
-		projects.add("HikariCP");
-		projects.add("ExoPlayer");
-		projects.add("MaterialDrawer");
-		projects.add("Hystrix");
-		projects.add("material-dialogs");
-
-		projects.add("glide");
-		projects.add("fresco");
+		
+		//Ruby
+		projects.add("fastlane");
+		projects.add("vagrant");
+		projects.add("metasploit-framework");
+		projects.add("diaspora");
+		projects.add("logstash");
+		
+		//PHP
+		projects.add("symfony");
+		projects.add("composer");
+		projects.add("yii2");
+		projects.add("matomo");
+		projects.add("cakephp");
 
 		for (int i = 0; i < projects.size(); i++) {
 

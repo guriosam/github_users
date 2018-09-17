@@ -2,23 +2,40 @@ package utils;
 
 public class URLs {
 
+	//JavaScript
+	public static final String angularJS = "angular/angular.js";
+	public static final String atom = "atom/atom";
+	public static final String threeJS = "mrdoob/three.js";
+	public static final String webpack = "webpack/webpack";
+	public static final String meteor = "meteor/meteor";
+
+	//Python
+	public static final String ansible = "ansible/ansible";
+	public static final String scikit_learn = "scikit-learn/scikit-learn";
+	public static final String pandas = "pandas-dev/pandas";
+	public static final String ipython = "ipython/ipython";
+	public static final String salt = "saltstack/salt";
+	
+	//Java
 	public static final String elasticsearch = "elastic/elasticsearch";
 	public static final String spring_boot = "spring-projects/spring-boot";
 	public static final String netty = "netty/netty";
 	public static final String bazel = "bazelbuild/bazel";
 	public static final String presto = "prestodb/presto";
-	public static final String signal_android = "signalapp/Signal-Android";
-	public static final String okhttp = "square/okhttp";
-	public static final String elasticsearch_hadoop = "elastic/elasticsearch-hadoop";
-	public static final String hikaricp = "brettwooldridge/HikariCP";
-	public static final String exoplayer = "google/ExoPlayer";
-	public static final String materialdrawer = "mikepenz/MaterialDrawer";
-	public static final String hystrix = "Netflix/Hystrix";
-	public static final String material_dialogs = "afollestad/material-dialogs";
-	public static final String guava = "google/guava";
-	public static final String glide = "bumptech/glide";
-	public static final String fresco = "facebook/fresco";
-	public static final String rxjava = "ReactiveX/RxJava";
+	
+	//Ruby
+	public static final String fastlane = "fastlane/fastlane";
+	public static final String vagrant = "hashicorp/vagrant";
+	public static final String metasploit_framework = "rapid7/metasploit-framework";
+	public static final String diaspora = "diaspora/diaspora";
+	public static final String logstash = "elastic/logstash";
+	
+	//PHP
+	public static final String symfony = "symfony/symfony";
+	public static final String composer = "composer/composer";
+	public static final String yii2 = "yiisoft/yii2";
+	public static final String matomo = "matomo-org/matomo";
+	public static final String cakephp = "cakephp/cakephp";
 
 	public static String getUrl(String project) {
 
@@ -26,11 +43,31 @@ public class URLs {
 		project = project.toLowerCase();
 
 		System.out.println(project);
-		
+
 		switch (project) {
+		case "angular.js":
+			return angularJS;
+		case "atom":
+			return atom;
+		case "three.js":
+			return threeJS;
+		case "webpack":
+			return webpack;
+		case "meteor":
+			return meteor;
+		case "ansible":
+			return ansible;
+		case "scikit-learn":
+			return scikit_learn;
+		case "pandas":
+			return pandas;
+		case "ipython":
+			return ipython;
+		case "salt":
+			return salt;
 		case "elasticsearch":
 			return elasticsearch;
-		case "spring_boot":
+		case "spring-boot":
 			return spring_boot;
 		case "netty":
 			return netty;
@@ -38,30 +75,26 @@ public class URLs {
 			return bazel;
 		case "presto":
 			return presto;
-		case "signal_android":
-			return signal_android;
-		case "okhttp":
-			return okhttp;
-		case "elasticsearch_hadoop":
-			return elasticsearch_hadoop;
-		case "hikaricp":
-			return hikaricp;
-		case "exoplayer":
-			return exoplayer;
-		case "materialdrawer":
-			return materialdrawer;
-		case "hystrix":
-			return hystrix;
-		case "material_dialogs":
-			return material_dialogs;
-		case "guava":
-			return guava;
-		case "glide":
-			return glide;
-		case "fresco":
-			return fresco;
-		case "rxjava":
-			return rxjava;
+		case "fastlane":
+			return fastlane;
+		case "vagrant":
+			return vagrant;
+		case "metasploit-framework":
+			return metasploit_framework;
+		case "diaspora":
+			return diaspora;
+		case "logstash":
+			return logstash;
+		case "symfony":
+			return symfony;
+		case "composer":
+			return composer;
+		case "yii2":
+			return yii2;
+		case "matomo":
+			return matomo;
+		case "cakephp":
+			return cakephp;
 		}
 
 		return "";
