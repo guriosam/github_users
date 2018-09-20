@@ -46,12 +46,6 @@ public class Commits {
 	@SuppressWarnings("unchecked")
 	public static void analyzeCommits(String project, List<UserPoint> userPoints) {
 
-		/*
-		 * List<String> buggyHashs = new ArrayList<>(); for (UserPoint up :
-		 * userPoints) { for (CommitInfo ci : up.getCommitInfo()) {
-		 * buggyHashs.add(ci.getHash()); } }
-		 */
-
 		boolean approach = true;
 		boolean heuristics = true;
 		boolean withPulls = true;
@@ -68,9 +62,25 @@ public class Commits {
 
 		List<String> gitHashs = IO.readAnyFile(LocalPaths.PATH_GIT + project + "/hashs.txt");
 
-		String firstHash = gitHashs.get(gitHashs.size() - 1);
+		String firstHash = "";
+		String firstDate = "";
+		int i = 1;
 
-		String firstDate = Util.getDate(project, firstHash);
+		while (firstDate.equals("")) {
+			firstHash = gitHashs.get(gitHashs.size() - i);
+			i++;
+			
+			firstDate = Util.getDate(project, firstHash);
+		
+			if((gitHashs.size() - i) < 0) {
+				System.out.println("A casa caiu mermão.");
+				return;
+				
+			}
+			
+		}
+
+		
 
 		List<UserInfo> jsonUsers = new ArrayList<>();
 
@@ -226,10 +236,10 @@ public class Commits {
 
 					if (userCommitsSize > 0) {
 						double ucs = userCommitsSize;
-						if(ucs == 0){
+						if (ucs == 0) {
 							ucs = 1;
 						}
-						
+
 						double percent = (double) ((double) insertion / (double) ucs);
 						userInfo.setPreviousBuggyPercent(percent);
 					} else {
@@ -977,6 +987,7 @@ public class Commits {
 					String authorName = "";
 
 					if (commit.containsKey("author")) {
+
 						LinkedTreeMap a = (LinkedTreeMap) commit.get("author");
 
 						if (commit.containsKey("sha")) {
@@ -985,6 +996,7 @@ public class Commits {
 						}
 
 						if (a != null) {
+
 							if (a.containsKey("login")) {
 								authorName = (String) a.get("login");
 								if (authorName.contains("\\")) {
@@ -1004,6 +1016,7 @@ public class Commits {
 							}
 						} else {
 							a = (LinkedTreeMap) commit.get("commit");
+
 							if (a.containsKey("author")) {
 								LinkedTreeMap b = (LinkedTreeMap) a.get("author");
 
@@ -1014,6 +1027,7 @@ public class Commits {
 									}
 									userWithoutLogin.add(authorName);
 									commitDAO.setAuthor(authorName);
+
 								}
 
 								if (b.containsKey("date")) {
@@ -1047,7 +1061,6 @@ public class Commits {
 						// List<String> dates = hashDates.get(authorName);
 						// dates.add(date);
 						// hashDates.replace(authorName, dates);
-
 					} else {
 						System.out.println(
 								commitDAO.getAuthor() + " - " + commitDAO.getHash() + " - " + commitDAO.getDate());

@@ -385,7 +385,7 @@ public class Util {
 				medianCommits = (double) list.get(list.size() / 2);
 			}
 		}
-		
+
 		return medianCommits;
 	}
 
@@ -640,40 +640,46 @@ public class Util {
 	}
 
 	public static String getDate(String project, String firstHash) {
-		
+
 		String date = "";
-		
+
 		String file = Util.getIndividualCommitsPath(project) + firstHash + ".json";
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+		File f = new File(file);
+
+		if (f.exists()) {
+			return "";
+		}
 
 		try {
 			String fileData = new String(Files.readAllBytes(Paths.get(file)));
 			LinkedTreeMap commitFile = gson.fromJson(fileData, LinkedTreeMap.class);
 
-			if(commitFile.containsKey("commit")){
+			if (commitFile.containsKey("commit")) {
 				LinkedTreeMap commit = (LinkedTreeMap) commitFile.get("commit");
-				
-				if(commit != null && commit.containsKey("author")){
+
+				if (commit != null && commit.containsKey("author")) {
 					LinkedTreeMap author = (LinkedTreeMap) commit.get("author");
-					
-					if(author != null && author.containsKey("date")){
+
+					if (author != null && author.containsKey("date")) {
 						date = (String) author.get("date");
 					}
 				}
 			}
-		
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
-		if(date.equals("")){
+
+		if (date.equals("")) {
 			System.out.println(file);
 			System.out.println("******** No date!! **********");
 		} else {
 			date = date.substring(0, date.indexOf("T"));
 			System.out.println(date);
 		}
-		
+
 		return date;
 	}
 }
