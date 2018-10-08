@@ -639,18 +639,22 @@ public class Util {
 		return path;
 	}
 
-	public static String getDate(String project, String firstHash) {
-
+	public static String getDate(String project, List<String> gitHashs) {
 		String date = "";
+		String file = "";
 
-		String file = Util.getIndividualCommitsPath(project) + firstHash + ".json";
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		for (int i = gitHashs.size() - 1; i > -1; i--) {
+			String firstHash = gitHashs.get(i);
+			
+			file = Util.getIndividualCommitsPath(project) + firstHash + ".json";
 
-		File f = new File(file);
-
-		if (f.exists()) {
-			return "";
+			File f = new File(file);
+			
+			if (f.exists()) {
+				break;
+			}
 		}
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
 		try {
 			String fileData = new String(Files.readAllBytes(Paths.get(file)));
@@ -661,7 +665,7 @@ public class Util {
 
 				if (commit != null && commit.containsKey("author")) {
 					LinkedTreeMap author = (LinkedTreeMap) commit.get("author");
-
+					gson = new GsonBuilder().setPrettyPrinting().create();
 					if (author != null && author.containsKey("date")) {
 						date = (String) author.get("date");
 					}

@@ -62,25 +62,8 @@ public class Commits {
 
 		List<String> gitHashs = IO.readAnyFile(LocalPaths.PATH_GIT + project + "/hashs.txt");
 
-		String firstHash = "";
-		String firstDate = "";
-		int i = 1;
-
-		while (firstDate.equals("")) {
-			firstHash = gitHashs.get(gitHashs.size() - i);
-			i++;
-			
-			firstDate = Util.getDate(project, firstHash);
-		
-			if((gitHashs.size() - i) < 0) {
-				System.out.println("A casa caiu mermão.");
-				return;
-				
-			}
-			
-		}
-
-		
+		String firstHash = gitHashs.get(gitHashs.size() - 1);
+		String firstDate = Util.getDate(project, gitHashs);
 
 		List<UserInfo> jsonUsers = new ArrayList<>();
 
@@ -999,9 +982,6 @@ public class Commits {
 
 							if (a.containsKey("login")) {
 								authorName = (String) a.get("login");
-								if (authorName.contains("\\")) {
-									continue;
-								}
 								commitDAO.setAuthor(authorName);
 							}
 
@@ -1022,7 +1002,7 @@ public class Commits {
 
 								if (b.containsKey("name")) {
 									authorName = (String) b.get("name");
-									if (authorName.contains("\\") || !authorName.contains(" ")) {
+									if (!authorName.contains(" ")) {
 										continue;
 									}
 									userWithoutLogin.add(authorName);
